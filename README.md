@@ -8,6 +8,7 @@ I know, there's a lot of differences. Meh, doesn't really matter, as long as I g
 
 Things being worked on:
 * More enemy types
+ * Asteroids
  * And maybe a boss
 * More weapons
  * **LASERS!!!**
@@ -17,7 +18,7 @@ Things being worked on:
 * Fancy _(citation needed)_ particle effects
 * Background?
 
-Once the game is somewhat playable, I'll edit it to index.html so that it will be accessible on [github](charcoding.github.io/PolyGalaxian).  
-I'll work on it if I have time (school is a thing, you know?)
+Once the game is somewhat playable, I'll edit it to index.html so that it will be accessible on [Github Pages](http://charcoding.github.io/PolyGalaxian).  
+I'll work on it if I have time (school is a thing, you know?).
 
-Feedback and suggestions are welcome! :D
+Feedbacks and suggestions are welcome! :D
