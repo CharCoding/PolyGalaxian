@@ -121,7 +121,135 @@
     <span id="bomb">0</span>
   </div>
   <script type="text/javascript">// Frametime: 30; FPS: 33.3
-  var timer, h = window.innerHeight, z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8Array([255,255,255,0]), meters = document.getElementsByClassName('value'), schedule = [], state = 0, powerups = ["weapon","invincibility","health","wingman","nuke","life"];
+  var timer, h = window.innerHeight, z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8Array([255,255,255,0]), meters = document.getElementsByClassName('value'), schedule = [], state = 0, powerups = ["weapon","invincibility","health","wingman","nuke","life"], enemies = ["Swarmer","Fighter","Spike"], data = {
+    Swarmer: {
+      health: 25, drawFn: function(self){
+        polygon(self.x,self.y,data.Swarmer.xs,data.Swarmer.ys,'#ffcf00'); // can it still be simplified to just polygon();?
+      }, moveFn: function(self){
+        self.sy-=0.01;
+        self.y += self.sy;
+        if(self.x<h/2)self.sx+=0.02;
+        else self.sx-=0.02;
+        self.x += self.sx;
+        self.collisionBox = [self.x-16,self.y-1,self.x,self.y+15,self.x+16,self.y-1];
+      }, fireFn: function(){return false;}, deathFn: function(index){
+        var self = entities.splice(index,1); // no drops for first enemy
+        barValue[3]+=5;
+        /*
+        if(Math.random()*barValue[3]>125){
+          new Drop(self.x,self.y,function(self){
+
+          },function(){
+
+          })
+        }
+        */
+      }, extend: { sx:0, sy:5 }, xs: [-15,-5,0,5,15], ys: [0,5,15,5,0]
+    },
+    Fighter: {
+      health: 50, drawFn: function(self){
+        polygon(self.x,self.y,data.Fighter.xs,data.Fighter.ys,'#ff1fcf');
+      }, moveFn: function(self){
+        if(self.y<h/5)self.sy=2;
+        else if(self.y>self.lowest){
+          self.sy=-2;
+          self.lowest+=12;
+        }
+        self.y+=self.sy;
+        if(self.x<h-player.x)self.x+=0.4;
+        else self.x-=0.4;
+        self.collisionBox = [self.x-16,self.y-1,self.x,self.y+25,self.x+16,self.y-1];
+      }, fireFn: function(self){
+        var bullet = new Projectile("Fighter",self.x,self.y,function(){
+          z.fillStyle = "#00ff3f";
+          z.fillRect(bullet.x,bullet.y,1,8);
+        },function(self){
+          bullet.y+=10;
+          if(bullet.y>h)bullet.hit = true;
+        },25);
+      }, deathFn: function(index){
+        entities.splice(index,1);
+        barValue[3] += 10;
+        // drop("powerup")
+      }, extend: {
+        sy: 0,
+        lowest: h/3*2
+      }, xs: [-15,-5,-4,4,5,15], ys: [0,24,7,7,24,0]
+    }, Spike: {
+      health: 75, drawFn: function(self){
+        polygon(self.x,self.y,data.Spike.xs,data.Spike.ys,'#ff0000');
+      }, moveFn: function(self){
+        if(!self.init){
+          self.midline = Math.random()*h/2+h/4;
+          self.span = Math.random()*Math.min(self.midline-h/10,h/10*9-self.midline);
+          self.ang = Math.random()*2*Math.PI;
+          self.x = Math.cos(self.ang)*self.span + self.midline;
+          self.init = true;
+        }
+        self.ang+=Math.PI/self.span/2;
+        self.x = Math.cos(self.ang)*self.span + self.midline;
+        self.y++;
+        self.collisionBox = [self.x-14,self.y-8,self.x,self.y+21,self.x+14,self.y-8];
+      }, fireFn: function(self){
+        var bullet = new Projectile("Spike",self.x,self.y,function(){
+          z.fillStyle = "#ff2f2f";
+          z.beginPath();
+          z.arc(bullet.x,bullet.y,5,0,2*Math.PI);
+          z.fill();
+        },function(){
+          bullet.x+=bullet.sx;
+          bullet.y+=bullet.sy;
+          if(bullet.x<0||bullet.x>h||bullet.y>h)bullet.hit=true;
+        },30);
+        bullet.sx = Math.cos(Math.random()*Math.PI)*Math.PI/2;
+        bullet.sy = Math.sin(Math.random()*Math.PI)*Math.PI/2;
+      }, deathFn: function(index){
+        entities.splice(index,1);
+        barValue[3]+=15;
+      }, extend: {
+        midline: 0,
+        span: 0,
+        ang: 0,
+        init: false
+      }, xs: [0,-14,-7,-7,0,7,7,14], ys: [-14,-7,14,0,21,0,14,-7]
+    }, weapon: {
+      drawFn: function(){
+
+      }, pickFn: function(){
+
+      }
+    }, invincibility: {
+      drawFn: function(){
+
+      }, pickFn: function(){
+        
+      }
+    }, health: {
+      drawFn: function(){
+
+      }, pickFn: function(){
+        
+      }
+    }, wingman: {
+      drawFn: function(){
+
+      }, pickFn: function(){
+        
+      }
+    }, nuke: {
+      drawFn: function(){
+
+      }, pickFn: function(){
+        
+      }
+    }, life: {
+      drawFn: function(){
+
+      }, pickFn: function(){
+        
+      }
+    }
+  }
   //z.globalCompositeOperation = 'lighter';
   c.style.width = (c.width = c.height = h) + 'px';
   c.style.marginLeft = h/-2 + 'px';
@@ -288,6 +416,8 @@
           timer = setInterval(tick,30);
         }
       break;
+      case 68: // D (debug mode)
+      break;
       case 16: //shift
       break;
       case 80: // p
@@ -303,78 +433,17 @@
       break;
     }
   });
-  var library = [
-    {
-      name: "Swarmer", health: 25, drawFn: function(self){
-        polygon(self.x,self.y,library[0].xs,library[0].ys,'#ffcf00'); // can it still be simplified to just polygon();?
-      }, moveFn: function(self){
-        self.sy-=0.01;
-        self.y += self.sy;
-        if(self.x<h/2)self.sx+=0.02;
-        else self.sx-=0.02;
-        self.x += self.sx;
-        self.collisionBox = [self.x-16,self.y-1,self.x,self.y+15,self.x+16,self.y-1];
-      }, fireFn: function(){return false;}, deathFn: function(index){
-        var self = entities.splice(index,1); // no drops for first enemy
-        barValue[3]+=5;
-        if(Math.random()*barValue[3]>125){
-          new Drop(self.x,self.y,function(self){
-
-          },function(){
-
-          })
-        }
-      }, extend: {
-        sx:0,
-        sy:5,
-      }, xs: [-15,-5,0,5,15], ys: [0,5,15,5,0]
-    },{
-      name: "Fighter", health: 50, drawFn: function(self){
-        polygon(self.x,self.y,library[1].xs,library[1].ys,'#ff1fcf');
-      }, moveFn: function(self){
-        if(self.y<h/5)self.sy=2;
-        else if(self.y>self.lowest){
-          self.sy=-2;
-          self.lowest+=12;
-        }
-        self.y+=self.sy;
-        if(self.x<h-player.x)self.x+=0.4;
-        else self.x-=0.4;
-        self.collisionBox = [self.x-16,self.y-1,self.x,self.y+25,self.x+16,self.y-1];
-      }, fireFn: function(self){
-        var bullet = new Projectile("Fighter",self.x,self.y,function(){
-          z.fillStyle = "#00ff3f";
-          z.fillRect(bullet.x,bullet.y,1,8);
-        },function(self){
-          bullet.y+=10;
-          if(bullet.y>h)bullet.hit = true;
-        },25);
-      }, deathFn: function(index){
-        entities.splice(index,1);
-        barValue[3] += 10;
-        // drop("powerup")
-      }, extend: {
-        sy: 0,
-        lowest: h/3*2
-      }, xs: [-15,-5,-4,4,5,15], ys: [0,24,7,7,24,0]
-    }, {
-      name:"Spike", health: 75, drawFn: function(self){
-        polygon(self.x,self.y,library[2].xs,library[2].ys,'#ff0000');
-      }, moveFn: function(self){
-
-      }
-    }
-  ];
   function spawnEnemy(type){
-    var values = library[type], arr = [values.name, Math.random()*h,0,values.health,values.drawFn,values.moveFn,values.fireFn,values.deathFn, values.extend];
-    new Entity(...arr);
+    if(!type)type == enemies[Math.random()*3|0];
+    var values = data[type];
+    new Entity(type,Math.random()*h,0,values.health,values.drawFn,values.moveFn,values.fireFn,values.deathFn,values.extend);
   }
   function tick(){
     //debugger;
     var tasks = schedule[++tick.s], l = entities.length;
     if(tasks)for(var i=0,l=tasks.length;i<l;i++)tasks[i](); // schedule system (for pausing and other tricky issues)
     if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){
-      for(var i=0;i<(Math.floor(Math.random()*tick.s/(l+1))%4);i++)spawnEnemy(Math.random()*2|0);
+      for(var i=0;i<(Math.floor(Math.random()*tick.s/(l+1))%4);i++)spawnEnemy(enemies[Math.random()*3|0]);
     }
     z.clearRect(0,0,h,h);
     player.draw(player);
@@ -383,12 +452,12 @@
       let e = entities[i];
       e.draw(e);
       e.move(e);
-      if(tick.s*tick.s%123==i)e.fire(e);
+      if(tick.s*tick.s%123==i&&enemyProjectiles.length<=30)e.fire(e);
       if(dist(e.x,e.y,player.x,player.y)<15){
         e.health-=5;
         if(!player.shield)barValue[2]=player.health-=24;
       }
-      if(e.y<0||e.y>h||e.health<=0)e.die(i--);
+      if(e.y>h||e.health<=0)e.die(i--);
     }
     if(player.health<=0)player.die();
     for(i=0;i<playerProjectiles.length;i++){
