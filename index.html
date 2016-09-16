@@ -122,7 +122,7 @@
     <span id="score">0</span>
   </div>
   <script type="text/javascript">// Frametime: 30; FPS: 33.3
-  var timer, h = window.innerHeight, z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8Array([255,255,255,0]), meters = document.getElementsByClassName('value'), schedule = [], state = 0, powerups = ["weapon","invincibility","health","wingman","nuke","life"], enemies = ["Swarmer","Fighter","Spike"], data = {
+  var timer, h = window.innerHeight, z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8Array([255,255,255,0]), meters = document.getElementsByClassName('value'), schedule = [], state = 0, powerups = ["weapon","invincibility","health","wingman","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
     Swarmer: {
       health: 25, drawFn: function(self){
         polygon(self.x,self.y,data.Swarmer.xs,data.Swarmer.ys,'#ffcf00'); // can it still be simplified to just polygon();?
@@ -189,7 +189,40 @@
         init: false
       }, xs: [0,-14,-7,-7,0,7,7,14], ys: [-14,-7,14,0,21,0,14,-7]
     }, Asteroid: {
-      // code
+      health: 40, drawFn: function(self){
+        var ang = self.ang;
+        z.beginPath();
+        z.moveTo(Math.cos(ang)*self.radius+self.x,Math.sin(ang)*self.radius+self.y);
+        for(var i=0;i<5;i++){
+          ang+=Math.PI/3;
+          z.lineTo(Math.cos(ang)*self.radius+self.x,Math.sin(ang)*self.radius+self.y);
+        }
+        z.closePath();
+        z.fillStyle = '#7f7f7f';
+        z.fill();
+      }, moveFn: function(self){
+        if(!self.init){
+          self.radius = Math.random()*6 + 6;
+          self.health = (self.radius>>>2)*5;
+          self.sx = Math.random()*4-2;
+          self.sy = 2;
+          self.sang = Math.random()*0.2-0.1;
+          self.init = true;
+        }
+        self.ang+=self.sang;
+        self.x+=self.sx;
+        self.y+=self.sy;
+      }, fireFn: function() { return; }, deathFn: function(index){
+        entities.splice(index,1);
+        return 5;
+      }, extend: {
+        radius: 0,
+        sx: 0,
+        sy: 0,
+        ang: 0,
+        sang: 0,
+        init: false
+      }
     }, Boss: {
       // code
     }, playerBullet: {
@@ -435,7 +468,7 @@
     }
   });
   function spawnEnemy(type){
-    if(!type)type == enemies[Math.random()*3|0];
+    if(!type)type == enemies[Math.random()*4|0];
     var values = data[type];
     new Entity(type,Math.random()*h,0,values.health,values.drawFn,values.moveFn,values.fireFn,values.deathFn,values.extend);
   }
@@ -448,7 +481,7 @@
     var tasks = schedule[++tick.s], l = entities.length;
     if(tasks)for(var i=0,l=tasks.length;i<l;i++)tasks[i](); // execute functions at this tick
     if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){
-      for(var i=0;i<(Math.floor(Math.random()*tick.s/(l+1))%4);i++)spawnEnemy(enemies[Math.random()*3|0]);
+      for(var i=0;i<(Math.floor(Math.random()*tick.s/(l+1))%4);i++)spawnEnemy(enemies[Math.random()*4|0]);
     }
     z.clearRect(0,0,h,h);
     player.draw(player);
@@ -457,7 +490,7 @@
       let e = entities[i];
       e.draw(e);
       e.move(e);
-      if(tick.s*tick.s%125==i&&enemyProjectiles.length<=30)e.fire(e);
+      if(tick.s*tick.s%125==i&&enemyProjectiles.length<32)e.fire(e);
       if(dist(e.x,e.y,player.x,player.y)<15){
         e.health-=5;
         if(!player.shield)barValue[2]=player.health-=24;
