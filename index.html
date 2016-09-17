@@ -97,28 +97,22 @@
   #sub { color: aqua; font-size: 20px; margin: 0; }
   #sub:hover { color: red; }
   </style>
+  <script type="text/javascript" src="FPSMeter.js"></script>
 </head>
 <body>
   <div id="start">
     <p id="title">PolyGalaxian</p>
     Control movement with mouse, left click/hold to fire, right click to activate shield,<br />
-    press "P" or "Esc" to pause/resume, press space to launch nuke.<br />
+    press "P" or "Esc" to pause/resume<br />
+    A = Ammo (red), S = Shield (blue), H = Health (green), X = XP (Yellow).
     <p id="sub">Click here or press space to start</p>
   </div>
   <canvas id="c" ondragstart="return false" oncontextmenu="return false">Sorry, but your browser does not support HTML5 Canvas. Please switch to the latest version of a modern browser, such as Google Chrome, Firefox, or Safari.</canvas>
   <div id="bars">
-    <div class="meter" id="ammo">
-      <div class="value"></div>
-    </div>
-    <div class="meter" id="shield">
-      <div class="value"></div>
-    </div>
-    <div class="meter" id="health">
-      <div class="value"></div>
-    </div>
-    <div class="meter" id="xp">
-      <div class="value"></div>
-    </div>
+    <div class="meter" id="ammo"><div class="value"></div></div>
+    <div class="meter" id="shield"><div class="value"></div></div>
+    <div class="meter" id="health"><div class="value"></div></div>
+    <div class="meter" id="xp"><div class="value"></div></div>
     <span id="score">0</span>
   </div>
   <script type="text/javascript">// Frametime: 30; FPS: 33.3
@@ -127,13 +121,13 @@
       health: 25, drawFn: function(self){
         polygon(self.x,self.y,data.Swarmer.xs,data.Swarmer.ys,'#ffcf00'); // can it still be simplified to just polygon();?
       }, moveFn: function(self){
-        self.sy-=0.01;
+        self.sy-=0.02;
         self.y += self.sy;
         if(self.x<h/2)self.sx+=0.02;
         else self.sx-=0.02;
         self.x += self.sx;
         self.collisionBox = [self.x-16,self.y-1,self.x,self.y+15,self.x+16,self.y-1];
-      }, fireFn: function(){return false;}, deathFn: function(index){
+      }, fireFn: function(){return;}, deathFn: function(index){
         var self = entities.splice(index,1);
         return 5;
       }, extend: { sx:0, sy:5 }, xs: [-15,-5,0,5,15], ys: [0,5,15,5,0]
@@ -164,13 +158,6 @@
       health: 75, drawFn: function(self){
         polygon(self.x,self.y,data.Spike.xs,data.Spike.ys,'#ff0000');
       }, moveFn: function(self){
-        if(!self.init){
-          self.midline = Math.random()*h/2+h/4;
-          self.span = Math.random()*Math.min(self.midline-h/10,h/10*9-self.midline);
-          self.ang = Math.random()*2*Math.PI;
-          self.x = Math.cos(self.ang)*self.span + self.midline;
-          self.init = true;
-        }
         self.ang+=Math.PI/self.span/2;
         self.x = Math.cos(self.ang)*self.span + self.midline;
         self.y++;
@@ -182,11 +169,11 @@
       }, deathFn: function(index){
         entities.splice(index,1);
         return 15;
-      }, extend: {
-        midline: 0,
-        span: 0,
-        ang: 0,
-        init: false
+      }, extend: function(self){
+        self.midline = Math.random()*h/2+h/4;
+        self.span = Math.random()*Math.min(self.midline-h/10,h/10*9-self.midline)+h/10;
+        self.ang = Math.random()*2*Math.PI;
+        self.x = Math.cos(self.ang)*self.span + self.midline;
       }, xs: [0,-14,-7,-7,0,7,7,14], ys: [-14,-7,14,0,21,0,14,-7]
     }, Asteroid: {
       health: 40, drawFn: function(self){
@@ -201,27 +188,37 @@
         z.fillStyle = '#7f7f7f';
         z.fill();
       }, moveFn: function(self){
-        if(!self.init){
-          self.radius = Math.random()*6 + 6;
-          self.health = (self.radius>>>2)*5;
-          self.sx = Math.random()*4-2;
-          self.sy = 2;
-          self.sang = Math.random()*0.2-0.1;
-          self.init = true;
-        }
         self.ang+=self.sang;
         self.x+=self.sx;
         self.y+=self.sy;
-      }, fireFn: function() { return; }, deathFn: function(index){
-        entities.splice(index,1);
+      }, fireFn: function() { return; }, deathFn: function(index){ // add "asteroid split"
+        var a = entities.splice(index,1)[0];
+        if(a&&a.radius>12){
+          var temp = Math.random()*4 + 6;
+          if(a.radius - temp<=6)return;
+          var b = new Entity("Asteroid",a.x,a.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,function(){return;},data.Asteroid.deathFn,data.Asteroid.split(temp));
+          var c = new Entity("Asteroid",a.x,a.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,function(){return;},data.Asteroid.deathFn,data.Asteroid.split(Math.random()*4+6));
+          if(a.radius-b.radius-c.radius>6){
+            var d = new Entity("Asteroid",a.x,a.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,function(){return;},data.Asteroid.deathFn,data.Asteroid.split(a.radius-b.radius-c.radius));
+          }
+        }
         return 5;
-      }, extend: {
-        radius: 0,
-        sx: 0,
-        sy: 0,
-        ang: 0,
-        sang: 0,
-        init: false
+      }, extend: function(self){
+        self.ang = 0;
+        self.radius = Math.random()*9 + Math.random()*9 + 6;
+        self.health = (self.radius>>>1)*5;
+        self.sx = Math.random()*4-2;
+        self.sy = 2;
+        self.sang = Math.random()*0.2-0.1;
+      }, split: function(radius){
+        return function(self){
+          self.ang = 0;
+          self.radius = radius;
+          self.health = (self.radius>>>1)*5;
+          self.sx = Math.random()*5 - 2.5;
+          self.sy = Math.random()*5 - 2.5;
+          self.sang = Math.random()*0.2-0.1;
+        }
       }
     }, Boss: {
       // code
@@ -233,7 +230,7 @@
         z.fillRect(this.x-1,this.y+this.sy-2.5,2,2);
       }, moveFn: function(){
         this.sy+=0.75;
-        this.y-=3.25+this.sy;
+        this.y-=3+this.sy;
         if(this.x<0||this.x>h||this.y<0)this.hit = true;
       }
     }, fighterBullet: {
@@ -241,7 +238,7 @@
         z.fillStyle = "#00ff3f";
         z.fillRect(this.x,this.y,1,8);
       }, moveFn: function(self){
-        this.y+=10;
+        this.y+=8;
         if(this.y>h)this.hit = true;
       }
     }, spikeBullet: {
@@ -289,10 +286,15 @@
       drawFn: function(){
 
       }, pickFn: function(){
-        
+
       }
     }
-  }
+  };
+  window.reqAnimFrame = (function() {
+    return window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+      window.mozRequestAnimationFrame || window.msRequestAnimationFrame ||
+      window.oRequestAnimationFrame || function(f) { window.setTimeout(f,1e3/60); }
+  })();
   c.style.width = (c.width = c.height = h) + 'px';
   c.style.marginLeft = h/-2 + 'px';
   bars.style.marginRight = h/2 + 'px';
@@ -306,8 +308,9 @@
     this.fire = fireFn;
     this.die = deathFn;
     this.collisionBox = [];
-    Object.assign(this,extend);
-    entities.push(this);
+    if(typeof extend == 'function') extend(this); // init function
+    else Object.assign(this,extend); // extend object if no initialization
+    entities.unshift(this);
     return this;
   }
   function Projectile(origin,_x,_y,drawFn,moveFn,damage){
@@ -406,8 +409,14 @@
     barValue[0]-=20;
   },function(){
     clearTimeout(timer);
+    state = 3;
+    entities = [];
+    playerProjectiles = [];
+    enemyProjectiles = [];
     schedule = [];
     barValue[2]=0;
+    player.health = 255;
+    start.style.display = 'block';
   },[],{
     firing:false,
     shield:false,
@@ -428,25 +437,30 @@
     mouse.y = e.layerY;
   });
   sub.addEventListener('click',function(e){
+    var view = new DataView(barValue.buffer);
+    view.setInt32(0,-256);
     state = 1;
     start.style.display = "none";
     timer = setInterval(tick,30);
+    //draw();
   });
   document.addEventListener('mouseup',function(e){
     if(e.which==1){
       player.firing = false;
       deleteCallback('PlayerFire');
-    }else if(e.which==3){
-      player.shield = false;
-    }
+    }else if(e.which==3) player.shield = false;
   });
   document.addEventListener('keydown',function(e){
     switch(e.keyCode){
       case 32: //space
         if(state==0||state==3){
+          var view = new DataView(barValue.buffer);
+          view.setInt32(0,-256);
+          z.clearRect(0,0,h,h);
           state = 1;
           start.style.display = 'none';
           timer = setInterval(tick,30);
+          //draw();
         }
       break;
       case 68: // D
@@ -459,9 +473,9 @@
         if(state==1){
           state = 2;
           clearTimeout(timer);
-          schedule = []; // garbage collect when paused :D
         }else if(state==2){
           state = 1;
+          //draw();
           timer = setInterval(tick,30);
         }
       break;
@@ -479,23 +493,28 @@
   }
   function tick(){
     var tasks = schedule[++tick.s], l = entities.length;
-    if(tasks)for(var i=0,l=tasks.length;i<l;i++)tasks[i](); // execute functions at this tick
+    if(tasks){
+      for(var i=0,l=tasks.length;i<l;i++)tasks[i](); // execute functions at this tick
+      //delete schedule[tick.s]; // breaks stuff?
+    }
     if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){
       for(var i=0;i<(Math.floor(Math.random()*tick.s/(l+1))%4);i++)spawnEnemy(enemies[Math.random()*4|0]);
     }
     z.clearRect(0,0,h,h);
     player.draw(player);
     player.move(player);
-    for(i=0;i<entities.length;i++){
+    for(i=0;i<entities.length;i++){ // entities.length has changed! can't use l again.
       let e = entities[i];
       e.draw(e);
       e.move(e);
-      if(tick.s*tick.s%125==i&&enemyProjectiles.length<32)e.fire(e);
+      if(tick.s*tick.s%125==i&&enemyProjectiles.length<32)e.fire(e); // need change: Some fires too frequently while others do not fire at all.
       if(dist(e.x,e.y,player.x,player.y)<15){
         e.health-=5;
-        if(!player.shield)barValue[2]=player.health-=24;
+        if(!player.shield){
+          if((barValue[2]=player.health-=24)<=0)player.die();
+        }
       }
-      if(e.y>h||e.health<=0)barValue[3]+=e.die(i--);
+      if(e.y>h||e.y<-1||e.health<=0)barValue[3]+=e.die(i--);
     }
     if(player.health<=0)player.die();
     for(i=0;i<playerProjectiles.length;i++){
@@ -504,7 +523,13 @@
       b.draw(b);
       for(var j=0;j<entities.length;j++){
         let e = entities[j];
-        if($(b.x,b.y,...e.collisionBox)){
+        if(e.name == 'Asteroid'){
+          if(dist(e.x,e.y,b.x,b.y)<e.radius){
+            if((e.health-=b.damage)<=0)e.die(j--);
+            b.hit = true;
+            break;
+          }
+        }else if($(b.x,b.y,...e.collisionBox)){
           if((e.health-=b.damage)<=0)e.die(j--);
           b.hit = true;
           //if(Math.random()*barValue[3]>=128)spawnDrop(e);
@@ -539,6 +564,42 @@
   }
   tick.s = 0;
   z.globalCompositeOperation = 'lighter';
+  var meter = new FPSMeter(document.body,{
+    interval:  60,     // Update interval in milliseconds.
+    smoothing: 1,      // Spike smoothing strength. 1 means no smoothing.
+    show:      'fps',   // Whether to show 'fps', or 'ms' = frame duration in milliseconds.
+    toggleOn:  'click', // Toggle between show 'fps' and 'ms' on this event.
+    decimals:  1,       // Number of decimals in FPS number. 1 = 59.9, 2 = 59.94, ...
+    maxFps:    60,      // Max expected FPS value.
+    threshold: 100,     // Minimal tick reporting interval in milliseconds.
+    theme: 'dark', // Meter theme. Build in: 'dark', 'light', 'transparent', 'colorful'.
+    heat:  0,      // Allow themes to use coloring by FPS heat. 0 FPS = red, maxFps = green.
+    position: 'absolute',
+    display: 'block',
+    left: 0,
+    top: 'auto',
+    right: 'auto',
+    bottom: 0,
+    width: '80px',
+    margin: '0 0 0 0',
+    graph:   0, // Whether to show history graph.
+    history: 16 // How many history states to show in a graph.
+});
+  /*
+  var fps = 40, now, then = performance.now(), interval = 1000/fps, delta;
+  function draw() {
+    if(state!=1)return;
+    reqAnimFrame(draw);
+    now = performance.now();
+    delta = now - then;
+    if (delta > interval) {
+      meter.tickStart();
+      tick();
+      meter.tick();
+      then = now - (delta % interval);
+    }
+  }
+  */
   </script>
 </body>
 </html>
