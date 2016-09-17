@@ -75,8 +75,7 @@
     display: inline-block;
     width: 255px;
     height: 18px;
-    margin-left: -1px;
-    margin-right: -1px;
+    margin-top: 0px;
     background-color: currentColor;
     transition: width 25ms;
   }
@@ -97,7 +96,7 @@
   #sub { color: aqua; font-size: 20px; margin: 0; }
   #sub:hover { color: red; }
   </style>
-  <script type="text/javascript" src="FPSMeter.js"></script>
+  <script type="text/javascript" src="https://rawgit.com/mrdoob/stats.js/master/build/stats.min.js"></script>
 </head>
 <body>
   <div id="start">
@@ -127,7 +126,7 @@
         else self.sx-=0.02;
         self.x += self.sx;
         self.collisionBox = [self.x-16,self.y-1,self.x,self.y+15,self.x+16,self.y-1];
-      }, fireFn: function(){return;}, deathFn: function(index){
+      }, deathFn: function(index){
         var self = entities.splice(index,1);
         return 5;
       }, extend: { sx:0, sy:5 }, xs: [-15,-5,0,5,15], ys: [0,5,15,5,0]
@@ -147,6 +146,7 @@
         self.collisionBox = [self.x-16,self.y-1,self.x,self.y+25,self.x+16,self.y-1];
       }, fireFn: function(self){
         var bullet = new Projectile("Fighter",self.x,self.y,data.fighterBullet.drawFn,data.fighterBullet.moveFn,25);
+        return 10;
       }, deathFn: function(index){
         entities.splice(index,1);
         return 10;
@@ -166,6 +166,7 @@
         var bullet = new Projectile("Spike",self.x+((Math.random()<.5)?-7:7),self.y+14,data.spikeBullet.drawFn,data.spikeBullet.moveFn,30);
         bullet.sx = Math.cos(Math.random()*Math.PI)*Math.PI/2;
         bullet.sy = Math.sin(Math.random()*Math.PI)*Math.PI/2;
+        return 15;
       }, deathFn: function(index){
         entities.splice(index,1);
         return 15;
@@ -191,15 +192,15 @@
         self.ang+=self.sang;
         self.x+=self.sx;
         self.y+=self.sy;
-      }, fireFn: function() { return; }, deathFn: function(index){ // add "asteroid split"
-        var a = entities.splice(index,1)[0];
-        if(a&&a.radius>12){
+      }, deathFn: function(index){ // add "asteroid split"
+        var par = entities.splice(index,1)[0];
+        if(par&&par.radius>12){
           var temp = Math.random()*4 + 6;
-          if(a.radius - temp<=6)return;
-          var b = new Entity("Asteroid",a.x,a.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,function(){return;},data.Asteroid.deathFn,data.Asteroid.split(temp));
-          var c = new Entity("Asteroid",a.x,a.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,function(){return;},data.Asteroid.deathFn,data.Asteroid.split(Math.random()*4+6));
-          if(a.radius-b.radius-c.radius>6){
-            var d = new Entity("Asteroid",a.x,a.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,function(){return;},data.Asteroid.deathFn,data.Asteroid.split(a.radius-b.radius-c.radius));
+          if(par.radius - temp<=6)return;
+          var chi1 = new Entity("Asteroid",par.x,par.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,undefined,data.Asteroid.deathFn,data.Asteroid.split(temp));
+          var chi2 = new Entity("Asteroid",par.x,par.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,undefined,data.Asteroid.deathFn,data.Asteroid.split(Math.random()*4+6));
+          if(par.radius-chi1.radius-chi2.radius>6){
+            var chi3 = new Entity("Asteroid",par.x,par.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,undefined,data.Asteroid.deathFn,data.Asteroid.split(par.radius-chi1.radius-chi2.radius));
           }
         }
         return 5;
@@ -291,9 +292,8 @@
     }
   };
   window.reqAnimFrame = (function() {
-    return window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
-      window.mozRequestAnimationFrame || window.msRequestAnimationFrame ||
-      window.oRequestAnimationFrame || function(f) { window.setTimeout(f,1e3/60); }
+    return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
+    window.msRequestAnimationFrame || window.oRequestAnimationFrame || function(f) { window.setTimeout(f,1e3/60); };
   })();
   c.style.width = (c.width = c.height = h) + 'px';
   c.style.marginLeft = h/-2 + 'px';
@@ -305,9 +305,10 @@
     this.health = health;
     this.draw = drawFn;
     this.move = moveFn;
-    this.fire = fireFn;
+    this.fire = fireFn||function(){return;}; // avoid errors (although it really shouldn't be called?)
     this.die = deathFn;
     this.collisionBox = [];
+    this.fired = 5;
     if(typeof extend == 'function') extend(this); // init function
     else Object.assign(this,extend); // extend object if no initialization
     entities.unshift(this);
@@ -343,7 +344,7 @@
     this.pick = pickFn;
     drops.push(this);
   }
-  function $(t,r,i,a,n,g,l,e){b=(-g*l+a*(-n+l)+i*(g-e)+n*e)/2;c=b<0?-1:1;d=(a*l-i*e+(e-a)*t+(i-l)*r)*c;f=(i*g-a*n+(a-g)*t+(n-i)*r)*c;return d>0&&f>0&&d+f<2*b*c}
+  function $(t,r,i,a,n,g,l,e){var b=(-g*l+a*(-n+l)+i*(g-e)+n*e)/2,c=b<0?-1:1,d=(a*l-i*e+(e-a)*t+(i-l)*r)*c,f=(i*g-a*n+(a-g)*t+(n-i)*r)*c;return d>0&&f>0&&d+f<2*b*c}
   function dist(a,n,c,e){return Math.sqrt(Math.pow(e-n,2)+Math.pow(c-a,2))}
   function callback(type,fn,tk){
     var arr = schedule[tk+tick.s];
@@ -410,6 +411,7 @@
   },function(){
     clearTimeout(timer);
     state = 3;
+    tick.s = 0;
     entities = [];
     playerProjectiles = [];
     enemyProjectiles = [];
@@ -433,16 +435,16 @@
     }
   });
   c.addEventListener('mousemove',function(e){
-    mouse.x = e.layerX;
-    mouse.y = e.layerY;
+    mouse.x = e.offsetX;
+    mouse.y = e.offsetY;
   });
   sub.addEventListener('click',function(e){
     var view = new DataView(barValue.buffer);
     view.setInt32(0,-256);
     state = 1;
     start.style.display = "none";
-    timer = setInterval(tick,30);
-    //draw();
+    //timer = setInterval(tick,30);
+    draw();
   });
   document.addEventListener('mouseup',function(e){
     if(e.which==1){
@@ -450,6 +452,12 @@
       deleteCallback('PlayerFire');
     }else if(e.which==3) player.shield = false;
   });
+  window.addEventListener('resize',function(e){
+    h = window.innerHeight;
+    c.style.width = (c.width = c.height = h) + 'px';
+    c.style.marginLeft = h/-2 + 'px';
+    bars.style.marginRight = h/2 + 'px';
+  })
   document.addEventListener('keydown',function(e){
     switch(e.keyCode){
       case 32: //space
@@ -459,8 +467,8 @@
           z.clearRect(0,0,h,h);
           state = 1;
           start.style.display = 'none';
-          timer = setInterval(tick,30);
-          //draw();
+          //timer = setInterval(tick,30);
+          draw();
         }
       break;
       case 68: // D
@@ -472,11 +480,11 @@
       case 27: // Esc
         if(state==1){
           state = 2;
-          clearTimeout(timer);
+          //clearInterval(timer);
         }else if(state==2){
           state = 1;
-          //draw();
-          timer = setInterval(tick,30);
+          draw();
+          //timer = setInterval(tick,30);
         }
       break;
     }
@@ -494,27 +502,34 @@
   function tick(){
     var tasks = schedule[++tick.s], l = entities.length;
     if(tasks){
-      for(var i=0,l=tasks.length;i<l;i++)tasks[i](); // execute functions at this tick
+      for(var i=0,ts=tasks.length;i<ts;i++)tasks[i](); // execute functions at this tick
       //delete schedule[tick.s]; // breaks stuff?
     }
-    if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){
+    if(l&&enemyProjectiles.length<=tick.s/15){
+      let r = entities[Math.random()*l|0];
+      if(r.name!='Swarmer'&&r.name!='Asteroid'){
+        if(r.fired)r.fired--; // fire cooldown
+        else r.fired = r.fire(r);
+      }
+    }
+    if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){ // this code need fix... Math.random in comparing stage? What?
       for(var i=0;i<(Math.floor(Math.random()*tick.s/(l+1))%4);i++)spawnEnemy(enemies[Math.random()*4|0]);
     }
     z.clearRect(0,0,h,h);
     player.draw(player);
     player.move(player);
-    for(i=0;i<entities.length;i++){ // entities.length has changed! can't use l again.
+    for(i=0;i<entities.length;i++){
       let e = entities[i];
       e.draw(e);
       e.move(e);
-      if(tick.s*tick.s%125==i&&enemyProjectiles.length<32)e.fire(e); // need change: Some fires too frequently while others do not fire at all.
       if(dist(e.x,e.y,player.x,player.y)<15){
         e.health-=5;
         if(!player.shield){
           if((barValue[2]=player.health-=24)<=0)player.die();
         }
       }
-      if(e.y>h||e.y<-1||e.health<=0)barValue[3]+=e.die(i--);
+      if(e.health<=0)barValue[3]+=e.die(i--);
+      else if(e.y>h+25||e.y<-25||e.x<-25||e.x>h+25)entities.splice(i--,1); // by not executing e.die(), we avoid spawning extra asteroids.
     }
     if(player.health<=0)player.die();
     for(i=0;i<playerProjectiles.length;i++){
@@ -525,12 +540,12 @@
         let e = entities[j];
         if(e.name == 'Asteroid'){
           if(dist(e.x,e.y,b.x,b.y)<e.radius){
-            if((e.health-=b.damage)<=0)e.die(j--);
+            if((e.health-=b.damage)<=0)barValue[3]+=e.die(j--);
             b.hit = true;
             break;
           }
         }else if($(b.x,b.y,...e.collisionBox)){
-          if((e.health-=b.damage)<=0)e.die(j--);
+          if((e.health-=b.damage)<=0)barValue[3]+=e.die(j--);
           b.hit = true;
           //if(Math.random()*barValue[3]>=128)spawnDrop(e);
           break; // One projectile can only damage one entity.
@@ -561,45 +576,28 @@
       if(barValue[i]<255)barValue[i]++;
     }
     if(barValue[1]<1)player.shield = false;
+    //if(body.classList.contains('debug')){}
   }
   tick.s = 0;
   z.globalCompositeOperation = 'lighter';
-  var meter = new FPSMeter(document.body,{
-    interval:  60,     // Update interval in milliseconds.
-    smoothing: 1,      // Spike smoothing strength. 1 means no smoothing.
-    show:      'fps',   // Whether to show 'fps', or 'ms' = frame duration in milliseconds.
-    toggleOn:  'click', // Toggle between show 'fps' and 'ms' on this event.
-    decimals:  1,       // Number of decimals in FPS number. 1 = 59.9, 2 = 59.94, ...
-    maxFps:    60,      // Max expected FPS value.
-    threshold: 100,     // Minimal tick reporting interval in milliseconds.
-    theme: 'dark', // Meter theme. Build in: 'dark', 'light', 'transparent', 'colorful'.
-    heat:  0,      // Allow themes to use coloring by FPS heat. 0 FPS = red, maxFps = green.
-    position: 'absolute',
-    display: 'block',
-    left: 0,
-    top: 'auto',
-    right: 'auto',
-    bottom: 0,
-    width: '80px',
-    margin: '0 0 0 0',
-    graph:   0, // Whether to show history graph.
-    history: 16 // How many history states to show in a graph.
-});
-  /*
-  var fps = 40, now, then = performance.now(), interval = 1000/fps, delta;
+  var stats = new Stats();
+  stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+  document.body.appendChild( stats.dom );
+  stats.dom.style.top = 'auto';
+  stats.dom.style.bottom = '0';
+  var fps = 44.44, now, then = performance.now(), interval = 22.5, delta;
   function draw() {
     if(state!=1)return;
     reqAnimFrame(draw);
     now = performance.now();
     delta = now - then;
     if (delta > interval) {
-      meter.tickStart();
+      stats.begin();
       tick();
-      meter.tick();
       then = now - (delta % interval);
+      stats.end();
     }
   }
-  */
   </script>
 </body>
 </html>
