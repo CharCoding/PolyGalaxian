@@ -81,11 +81,11 @@
     left: -2px;
   }
   #ammo,#health,#shield{
-    top: 220px;
     z-index: 4;
-    opacity: .7;
+    opacity: .8;
   }
   #ammo{
+    top: 206px;
     left: 11px;
     border-left: 4px solid red;
     border-right: 4px solid red;
@@ -116,10 +116,11 @@
   }
   #shield{
     font-size: 13px;
-    left: 37px;
+    left: 37.5px;
+    top: 222px;
     width: 26px;
-    padding-top: 5px;
-    height: 35px;
+    padding-top: 10px;
+    height: 30px;
     border-bottom-left-radius: 50%;
     border-bottom-right-radius: 50%;
     text-align: center;
@@ -144,13 +145,20 @@
     border-right: 10px solid #0f0;
     box-shadow: 0 -6px #fff;
   }
+  #health{
+    top: 242px;
+    left: 73px;
+    border-top: 12px solid #fff;
+    border-left: 12px solid #0f0;
+    border-right: 12px solid #0f0;
+  }
   #health::before{
     z-index: -1;
     content: "";
-    left: -12px;
-    top: -21px;
-    width: 12px;
-    height: 12px;
+    left: -13px;
+    top: -23.5px;
+    width: 14px;
+    height: 14px;
     border-radius: 6px;
     box-shadow: 12px 0 #fff;
   }
@@ -161,7 +169,7 @@
     position: absolute;
     display: block;
     left: -4px;
-    top: -20px;
+    top: -22px;
   }
   div:last-child{ display: none; }
   .debug>#c{ left: 100px; margin-left: 0; }
@@ -186,12 +194,13 @@
   </style>
   <script type="text/javascript" src="stats.min.js"></script>
 </head>
-<body ondragstart="return false">
+<body ondragstart="return false" class="debug">
   <div id="start">
     <p id="title">PolyGalaxian</p>
-    Control movement with mouse, left click/hold to fire, right click to activate shield,<br />
-    press "P" or "Esc" to pause/resume<br />
-    A = Ammo (red), S = Shield (blue), H = Health (green), X = XP (Yellow).
+    Control movement with mouse,<br />
+    left click/hold to fire, right click to activate shield.<br />
+    Press "P" or "Esc" to pause/resume.<br />
+    Press "D" for debug mode (FPS counter).
     <p id="sub">Click here or press space to start</p>
     <ul id="credits">Credits:
       <li>Programming by <a href="http://github.com/CharCoding/">Charly Cui</a>.</li>
@@ -211,7 +220,7 @@
   </div>
   <canvas id="c" oncontextmenu="return false">Sorry, but your browser does not support HTML5 Canvas. Please switch to the latest version of a modern browser, such as Google Chrome, Firefox, or Safari.</canvas>
   <script type="text/javascript">
-  var h = window.innerHeight, w = s.getContext('2d'), z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8Array([255,255,255]), meters = document.getElementsByClassName('value'), schedule = [], Game = {state:0,time:0,hiscore:255}, powerups = ["weapon","invincibility","health","wingman","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
+  var h = window.innerHeight, w = s.getContext('2d'), z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8ClampedArray([255,255,255]), meters = document.getElementsByClassName('value'), schedule = [], Game = {state:0,time:0,hiscore:1000}, powerups = ["weapon","health","wingman","time","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
     Swarmer: {
       health: 25, drawFn: function(self){
         polygon(self.x,self.y,data.Swarmer.xs,data.Swarmer.ys,'#ffcf00'); // can it still be simplified to just polygon();?
@@ -224,10 +233,9 @@
         self.collisionBox = [self.x-16,self.y-1,self.x,self.y+15,self.x+16,self.y-1];
       }, deathFn: function(index){
         entities.splice(index,1);
-        return 5;
+        return 2;
       }, extend: { sx:0, sy:5 }, xs: [-15,-5,0,5,15], ys: [0,5,15,5,0]
-    },
-    Fighter: {
+    }, Fighter: {
       health: 50, drawFn: function(self){
         polygon(self.x,self.y,data.Fighter.xs,data.Fighter.ys,'#ff1fcf');
       }, moveFn: function(self){
@@ -235,24 +243,28 @@
         else if(self.y>self.lowest){
           self.sy=-2;
           self.lowest+=12;
+          self.px = player.x;
         }
         self.y+=self.sy;
-        if(self.x<h-player.x)self.x+=0.4;
-        else self.x-=0.4;
+        if(Math.abs(self.px-self.x)<0.5)self.x=self.px;
+        else if(self.x<self.px)self.x+=0.5;
+        else self.x-=0.5;
         self.collisionBox = [self.x-16,self.y-1,self.x,self.y+25,self.x+16,self.y-1];
       }, fireFn: function(self){
         var bullet = new Projectile("Fighter",self.x,self.y,data.fighterBullet.drawFn,data.fighterBullet.moveFn,25);
         return 10;
       }, deathFn: function(index){
-        entities.splice(index,1);
-        return 10;
-      }, extend: {
-        sy: 0,
-        lowest: h/3*2
+        var en = entities.splice(index,1)[0];
+        spawnDrop(en);
+        return 4;
+      }, extend: function(self){
+        self.px = h-player.x;
+        self.sy = 0;
+        self.lowest = h/3*2;
       }, xs: [-15,-5,-4,4,5,15], ys: [0,24,7,7,24,0]
     }, Spike: {
       health: 75, drawFn: function(self){
-        polygon(self.x,self.y,data.Spike.xs,data.Spike.ys,'#ff0000');
+        polygon(self.x,self.y,data.Spike.xs,data.Spike.ys,'#f00');
       }, moveFn: function(self){
         self.ang+=Math.PI/self.span/2;
         self.x = Math.cos(self.ang)*self.span + self.midline;
@@ -260,12 +272,14 @@
         self.collisionBox = [self.x-14,self.y-8,self.x,self.y+21,self.x+14,self.y-8];
       }, fireFn: function(self){
         var bullet = new Projectile("Spike",self.x+((Math.random()<.5)?-7:7),self.y+14,data.spikeBullet.drawFn,data.spikeBullet.moveFn,30);
-        bullet.sx = Math.cos(Math.random()*Math.PI)*Math.PI/2;
-        bullet.sy = Math.sin(Math.random()*Math.PI)*Math.PI/2;
+        var ang = Math.atan2(player.y-self.y,player.x-self.x);
+        bullet.sx = Math.cos(ang)*Math.PI/2;
+        bullet.sy = Math.sin(ang)*Math.PI/2;
         return 15;
       }, deathFn: function(index){
-        entities.splice(index,1);
-        return 15;
+        var en = entities.splice(index,1)[0];
+        spawnDrop(en);
+        return 6;
       }, extend: function(self){
         self.midline = Math.random()*h/2+h/4;
         self.span = Math.random()*Math.min(self.midline-h/10,h/10*9-self.midline)+h/10;
@@ -282,7 +296,7 @@
           z.lineTo(Math.cos(ang)*self.radius+self.x,Math.sin(ang)*self.radius+self.y);
         }
         z.closePath();
-        z.fillStyle = '#7f7f7f';
+        z.fillStyle = '#777';
         z.fill();
       }, moveFn: function(self){
         self.ang+=self.sang;
@@ -290,7 +304,7 @@
         self.y+=self.sy;
       }, deathFn: function(index){
         var par = entities.splice(index,1)[0];
-        if(par&&par.radius>12){
+        if(par.radius>12){
           var temp = Math.random()*4 + 6;
           if(par.radius - temp<=6)return;
           var chi1 = new Entity("Asteroid",par.x,par.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,undefined,data.Asteroid.deathFn,data.Asteroid.split(temp));
@@ -299,7 +313,8 @@
             var chi3 = new Entity("Asteroid",par.x,par.y,40,data.Asteroid.drawFn,data.Asteroid.moveFn,undefined,data.Asteroid.deathFn,data.Asteroid.split(par.radius-chi1.radius-chi2.radius));
           }
         }
-        return par.radius>>1;
+        spawnDrop(par);
+        return par.radius/3|0;
       }, extend: function(self){
         self.ang = 0;
         self.radius = Math.random()*9 + Math.random()*9 + 6;
@@ -317,11 +332,44 @@
           self.sang = Math.random()*0.2-0.1;
         }
       }
-    }, Boss: {
-      // code
+    }, /*Cannon: {
+      health: 75, drawFn: function(self){
+
+      }, moveFn: function(self){
+        if(dist(self.x,self.y,self.dx,self.dy)>3){
+          self.x+=Math.cos(self.ang)*8;
+          self.y+=Math.sin(self.ang)*8;
+        }
+      }, fireFn: function(self){
+        var bullet = new Projectile("Cannon",self.x,self.y,data.cannonBullet.drawFn,data.cannonBullet.moveFn,40);
+        bullet.sx = Math.cos(self.shootAng)*15;
+        bullet.sy = Math.sin(self.shootAng)*15;
+        return 50;
+      }, deathFn: function(index){
+        entities.splice(index,1);
+        return 20;
+      }, extend: function(self){
+        self.dx = Math.random()*h/3*2+h/6;
+        self.dy = Math.random()*h/4+h/4;
+        self.ang = Math.atan2(self.dy-self.y,self.dx-self.x);
+        self.shootAng = Math.atan2(player.y-self.y,player.x-self.x);
+      }
+    },*/ Boss: {
+      health: 800, drawFn: function(self){
+
+      }, moveFn: function(self){
+
+      }, fireFn: function(self){
+
+      }, deathFn: function(index){
+        entities.splice(index,1);
+        return 100;
+      }, extend: function(self){
+        
+      }
     }, playerBullet: {
       drawFn: function(){
-        z.fillStyle = 'rgba(255,255,255,1)';
+        z.fillStyle = '#fff';
         z.fillRect(this.x-1.5,this.y-1.5,3,3);
         z.fillStyle = 'rgba(255,255,255,0.6)';
         z.fillRect(this.x-1-this.sx,this.y+this.sy-2.5,2,2);
@@ -351,42 +399,78 @@
         this.y+=this.sy;
         if(this.x<0||this.x>h||this.y>h)this.hit=true;
       }
+    }, missile: {
+      drawFn: function(self){
+        polygon(self.x,self.y,data.missile.xs,data.missile.ys,'#cccc00');
+      }, moveFn: function(){
+        this.y+=25;
+        if(this.y>h+25)this.hit = true;
+      }, xs: [0,-5,-5,-7,-5,-5,-8,8,5,5,7,5,5], ys: [0,-10,-20,-24,-24,-36,-40,-40,-36,-24,-24,-20,-10]
     }, weapon: {
       drawFn: function(self){
         polygon(self.x,self.y,data.weapon.xs,data.weapon.ys,'#ff1f3f');
+        particle(self.x,self.y,'rgba(255,80,80,0.8)',10);
       }, pickFn: function(){
-        player.weaponLevel++;
-      }, xs: [0,-4,-2,-2,2,2,4], ys: [-4,0,0,4,4,0,0]
-    }, invincibility: {
-      drawFn: function(self){
-        z.fillStyle = '#007fff';
-        z.fillText('\u221e',self.x,self.y);
-      }, pickFn: function(){
-        
-      }
+        if(player.weaponLevel<16)player.weaponLevel++;
+        else {
+          player.laser = true;
+          callback("stopLaser",function(){player.laser = false;},500);
+        }
+      }, xs: [0,-8,-4,-4,4,4,8], ys: [-8,0,0,8,8,0,0]
     }, health: {
-      drawFn: function(){
-
+      drawFn: function(self){
+        z.fillStyle = '#00ff00';
+        z.fillRect(self.x-2,self.y-9,4,18);
+        z.fillRect(self.x-9,self.y-2,18,4);
+        particle(self.x,self.y,'rgba(200,255,200,0.8)',10);
       }, pickFn: function(){
-        
+        player.regen = true;
+        callback("stopRegen",function(){player.regen = false;},25);
       }
     }, wingman: {
-      drawFn: function(){
-
+      drawFn: function(self){
+        z.beginPath();
+        z.moveTo(self.x,self.y-8);
+        z.lineTo(self.x-6,self.y+5);
+        z.lineTo(self.x,self.y);
+        z.lineTo(self.x+6,self.y+5);
+        z.closePath();
+        z.fillStyle = '#007fff';
+        z.fill();
+        particle(self.x,self.y,'rgba(0,127,255,0.8)',10)
       }, pickFn: function(){
-        
+        if(!player.wingman)player.wingman = Math.random()*2+1|0;
+        else player.wingman = 3;
       }
-    }, nuke: {
-      drawFn: function(){
-
+    }, time: {
+      drawFn: function(self){
+        z.lineWidth = 1;
+        z.strokeStyle = z.fillStyle = "#ffcf00";
+        z.beginPath();
+        z.moveTo(self.x,self.y);
+        z.lineTo(self.x-4,self.y-4);
+        z.lineTo(self.x-4,self.y-8);
+        z.lineTo(self.x+4,self.y-8);
+        z.lineTo(self.x+4,self.y-4);
+        z.closePath();
+        z.fill();
+        z.lineTo(self.x-4,self.y+4);
+        z.lineTo(self.x-4,self.y+8);
+        z.lineTo(self.x+4,self.y+8);
+        z.lineTo(self.x+4,self.y+4);
+        z.closePath();
+        z.stroke();
+        particle(self.x,self.y,'rgba(255,200,0,0.8)',10);
+        z.lineWidth = 4;
       }, pickFn: function(){
-        
+        player.freeze = true;
+        callback("stopFreeze",function(){player.freeze = false},360);
       }
     }, life: {
       drawFn: function(){
 
       }, pickFn: function(){
-
+        
       }
     }
   };
@@ -432,12 +516,19 @@
     this.sy = _y<h/2?1:-1;
     this.type = type;
     this.draw = drawFn;
-    this.move = function(){
-      if(this.x<10)this.sx = 1;
-      else if(this.x>h-10)this.sy = -1;
-      if(this.y<10)this.sy = 1;
-      else if(this.y>h-10)this.sy = -1;
-      if(dist(this.x,this.y,player.x,player.y)<16)this.pick(this.type);
+    this.done = 500;
+    this.move = function(self){
+      self.done--;
+      if(dist(self.x,self.y,player.x,player.y)<16){
+        self.pick();
+        return this.done=0;
+      }
+      if(self.x<10)self.sx = 1;
+      else if(self.x>h-10)self.sy = -1;
+      if(self.y<10)self.sy = 1;
+      else if(self.y>h-10)self.sy = -1;
+      self.x+=self.sx;
+      self.y+=self.sy;
     }
     this.pick = pickFn;
     drops.push(this);
@@ -466,21 +557,35 @@
     z.fill();
   }
   function particle(x,y,clr,rad){
-    var ang = tick.s/Math.PI/2;
+    var ang = tick.s/Math.PI/4;
     z.strokeStyle = clr;
     for(var i=0;i<3;i++){
       z.beginPath();
-      z.arc(x,y,rad,ang,ang+0.1);
+      z.arc(x,y,rad,ang,ang+0.6);
       z.stroke();
       ang += Math.PI/3*2;
     }
   }
   var player = new Entity('Player',h/2,h-50,255,function(self){
     z.beginPath();
-    z.moveTo(self.x-10,self.y+5);
-    z.lineTo(self.x,self.y-15);
-    z.lineTo(self.x+10,self.y+5);
+    z.moveTo(self.x-10,self.y+10);
+    z.lineTo(self.x,self.y-10);
+    z.lineTo(self.x+10,self.y+10);
     z.closePath();
+    if(self.wingman&1){
+      z.moveTo(self.x-36,self.y-4);
+      z.lineTo(self.x-43,self.y+10);
+      z.lineTo(self.x-36,self.y+6);
+      z.lineTo(self.x-29,self.y+10);
+      z.lineTo(self.x-36,self.y-4);
+    }
+    if(self.wingman&2){
+      z.moveTo(self.x+36,self.y-4);
+      z.lineTo(self.x+43,self.y+10);
+      z.lineTo(self.x+36,self.y+6);
+      z.lineTo(self.x+29,self.y+10);
+      z.lineTo(self.x+36,self.y-4);
+    }
     z.fillStyle = '#007fff';
     z.fill();
     if(self.shield){
@@ -492,33 +597,43 @@
       else self.shield = false;
     }
   },function(self){
-    if(dist(mouse.x,mouse.y,self.x,self.y)<30){
+    if(dist(mouse.x,mouse.y,self.x,self.y)<10){
       self.x = mouse.x;
       self.y = mouse.y;
     }else{
       var ang = Math.atan2(mouse.y-self.y,mouse.x-self.x);
-      self.y += Math.sin(ang)*30;
-      self.x += Math.cos(ang)*30;
+      self.y += Math.sin(ang)*10;
+      self.x += Math.cos(ang)*10;
     }
-    self.collisionBox = [self.x-10,self.y+5,self.x,self.y-15,self.x+10,self.y+5];
+    if(self.regen)barValue[2]=++self.health;
+    self.collisionBox = [self.x-10,self.y+10,self.x,self.y-10,self.x+10,self.y+10];
   },function(){
-    if(player.firing&&barValue[0]>10)callback('PlayerFire',player.fire,15);
-    if(barValue[0]<20)return;
-    if(player.weaponLevel%2){
-      var m = new Projectile('Player',player.x,player.y,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
+    if(player.firing&&barValue[0]>2+player.weaponLevel*2)callback('PlayerFire',player.fire,15);
+    if(barValue[0]<17+player.weaponLevel*2)return;
+    if(player.weaponLevel%3!=2){
+      var m = new Projectile('Player',player.x,player.y-2,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
       m.ang = Math.PI/2;
-    }else{
-      var m1 = new Projectile('Player',player.x-5,player.y-1,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      var m2 = new Projectile('Player',player.x+5,player.y-1,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
+    }
+    if(player.weaponLevel%3!=1){
+      var m1 = new Projectile('Player',player.x-6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25),
+      m2 = new Projectile('Player',player.x+6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
       m1.ang = m2.ang = Math.PI/2;
     }
-    for(var i=1,e=(player.weaponLevel+1)>>1;i<e;i++){
-      var l = new Projectile('Player',player.x-5,player.y-1,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
+    if(player.wingman&1){
+      var m3 = new Projectile('Player',player.x-36,player.y+5,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
+      m3.ang = Math.PI/2;
+    }
+    if(player.wingman&2){
+      var m4 = new Projectile('Player',player.x+36,player.y+5,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
+      m4.ang = Math.PI/2;
+    }
+    for(var i=1,e=player.weaponLevel/3;i<e;i++){
+      var l = new Projectile('Player',player.x-6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
       l.ang = 0.125*i+Math.PI/2;
-      var r = new Projectile('Player',player.x+5,player.y-1,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
+      var r = new Projectile('Player',player.x+6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
       r.ang = Math.PI/2-0.125*i;
     }
-    barValue[0]-=20;
+    barValue[0]-=17+player.weaponLevel*2;
   },function(){
     Game.state = 3;
     entities = [];
@@ -531,10 +646,20 @@
     start.style.display = 'block';
     title.innerHTML = 'Game over!';
   },{
+    hurt:function(dmg){
+      if(this.shield)return;
+      if((barValue[2]=this.health-=dmg)<=0)return this.die();
+      if(this.weaponLevel>1)this.weaponLevel--;
+      if(Math.random()<.5)this.kills++; // compensation
+    },
     score:0,
     firing:false,
     shield:false,
     weaponLevel:1,
+    regen:false,
+    laser:false,
+    freeze:false,
+    kills:0,
     wingman:0
   });
   entities.shift(); // Exclude player from entity list
@@ -567,6 +692,7 @@
     }else if(e.which==3) player.shield = false;
   });
   window.addEventListener('resize',function(e){
+    if(h==window.innerHeight)return;
     h = window.innerHeight;
     c.width = c.height = h;
     s.style.height = (s.height = h - 50)+'px';
@@ -601,9 +727,11 @@
     new Entity(type,Math.random()*h,0,values.health,values.drawFn,values.moveFn,values.fireFn,values.deathFn,values.extend);
   }
   function spawnDrop(e){
-    if(!type)type == powerups[Math.random()*3|0];
+    if(player.kills++<=40||drops.length>2||player.score%40<=30)return;
+    var type = powerups[Math.random()*4|0];
     var values = data[type];
     new Drop(type,e.x,e.y,values.drawFn,values.pickFn);
+    player.kills = 0;
   }
   function tick(){
     var tasks = schedule[++tick.s], l = entities.length;
@@ -611,7 +739,7 @@
     if(tasks){
       for(var i=0,ts=tasks.length;i<ts;i++)tasks[i](); // execute functions at this tick
     }
-    if(l&&enemyProjectiles.length<=tick.s/15){
+    if(!player.freeze&&l&&enemyProjectiles.length<=tick.s/15){
       let r = entities[Math.random()*l|0];
       if(r.name!='Swarmer'&&r.name!='Asteroid'){
         if(r.fired)r.fired--; // fire cooldown
@@ -627,13 +755,10 @@
     for(i=0;i<entities.length;i++){
       let e = entities[i];
       e.draw(e);
-      e.move(e);
+      if(!player.freeze)e.move(e);
       if(dist(e.x,e.y,player.x,player.y)<15){
         e.health-=5;
-        if(!player.shield){
-          if((barValue[2]=player.health-=24)<=0)player.die();
-          if(player.weaponLevel>1)player.weaponLevel--;
-        }
+        player.hurt(24);
       }
       if(e.health<=0)player.score+=e.die(i--)|0;
       else if(e.y>h+25||e.y<-25||e.x<-25||e.x>h+25)entities.splice(i--,1); // by not executing e.die(), we avoid spawning extra asteroids.
@@ -664,11 +789,10 @@
       b.move(b);
       b.draw(b);
       if($(b.x,b.y,...player.collisionBox)){
-        if(!player.shield){
-          if((barValue[2]=player.health-=b.damage)<=0)player.die();
-          if(player.weaponLevel>1)player.weaponLevel--;
-        }
+        player.hurt(b.damage);
         b.hit = true;
+      }else if($()){
+        
       }
       if(b.hit)enemyProjectiles.splice(i--,1);
     }
@@ -676,6 +800,7 @@
       let b = drops[i];
       b.move(b);
       b.draw(b);
+      if(b.done==0)drops.splice(i--,1);
     }
     if(barValue[1]<1)player.shield = false;
   }
@@ -689,10 +814,10 @@
     w.textAlign = 'right';
     w.fillText(player.score+'',100,75);
     w.fillText(Game.hiscore+'',100,125);
-    if(barValue[0]<255)barValue[0]++;
+    if(barValue[0]<255)barValue[0]++; // checking doesn't matter anymore, using Uint8ClampedArray.
     w.fillStyle = '#f00';
     w.fillRect(0,370-barValue[0],30,barValue[0]);
-    if(barValue[1]<255)barValue[1]++;
+    if(barValue[1]<255)barValue[1]++; // maybe just increment every time?
     w.fillStyle = '#00f';
     w.fillRect(35,370-barValue[1],30,barValue[1]);
     w.fillStyle = '#0f0';
@@ -704,16 +829,22 @@
       w.fillText(entities.length,0,400);
       w.fillText(enemyProjectiles.length,0,420);
       w.textAlign = 'center';
-      w.fillText('('+player.x+','+player.y+')',50,440);
-      w.fillText('('+mouse.x+','+mouse.y+')',50,460);
+      w.fillText((player.x|0)+','+(player.y|0),50,440);
+      w.fillText((mouse.x|0)+','+(mouse.y|0),50,460);
       w.textAlign = 'right';
       w.fillText(drops.length,100,400);
       w.fillText(playerProjectiles.length,100,420);
       w.fillText(tick.s,100,480);
     }
+    if(Game.state==2){// need fix, sometimes doesn't draw.
+      w.fillStyle = '#f00';
+      w.fillRect(42,380,5,28);
+      w.fillRect(53,380,5,28);
+    }
   }
   tick.s = 0;
   z.globalCompositeOperation = 'lighter';
+  z.lineWidth = 4;
   z.textAlign = 'center';
   w.font = '24px Minecraftia';
   var stats = new Stats();
