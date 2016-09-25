@@ -44,133 +44,15 @@
     -ms-user-select: none;
     user-select: none;
   }
-  #s,#scoreText{ position: absolute; }
-  #scoreText {
-    top: 60px;
-    color: #0078e7;
-    font-size: 20px;
-  }
-  .divider {
-    height: 1px;
+  #s{ position: absolute; }
+  img {
+    position: absolute;
     left: 0;
-    background-color: #0078e7;
-  }
-  #scoreText::after,#scoreText::before{
-    position: relative;
+    top: 35px;
+    width: 100px;
+    height: auto;
     display: inline-block;
-    font-size: 10px;
-  }
-  #ammo,#health{ width: 0; height: 0 }
-  #shield::after,#shield::before{
-    background-color: #00f;
-    top: 0;
-    width: 13px;
-    height: 8px;
-    content: "";
-    display: block;
-  }
-  #ammo,#ammo::after,#ammo::before,#health,#health::before,#shield{ background-color: #fff; position: absolute; }
-  #scoreText::before{
-    content: "Score";
-    text-decoration: underline;
-    top: -13px;
-  }
-  #scoreText::after{
-    content: "Hiscore";
-    text-decoration: overline;
-    top: -12px;
-    left: -2px;
-  }
-  #ammo,#health,#shield{
-    z-index: 4;
-    opacity: .8;
-  }
-  #ammo{
-    top: 206px;
-    left: 11px;
-    border-left: 4px solid red;
-    border-right: 4px solid red;
-    border-bottom: 12px solid #fff;
-    box-shadow: 0 13px #fff, 0 30px 0 2px #fff;
-  }
-  #ammo::before{
-    content: "";
-    display: block;
-    width: 14px;
-    height: 1px;
-    left: -7px;
-    top: 45px;
-  }
-  #ammo::after{
-    color: red;
-    font-size: 13px;
-    content: "A";
-    text-align: center;
-    display: block;
-    width: 8px;
-    height: 0;
-    top: 26px;
-    left: -6px;
-    border-left: 2px solid red;
-    border-right: 2px solid red;
-    border-bottom: 4px solid #fff;
-  }
-  #shield{
-    font-size: 13px;
-    left: 37.5px;
-    top: 222px;
-    width: 26px;
-    padding-top: 10px;
-    height: 30px;
-    border-bottom-left-radius: 50%;
-    border-bottom-right-radius: 50%;
-    text-align: center;
-    color: #00f;
-  }
-  #shield::before{
-    position: absolute;
-    left: 0;
-    border-bottom-right-radius: 100%;
-  }
-  #shield::after{
-    position: absolute;
-    right: 0;
-    border-bottom-left-radius: 100%;
-  }
-  #health{
-    top: 242px;
-    left: 75px;
-    background: 0 0;
-    border-top: 10px solid #fff;
-    border-left: 10px solid #0f0;
-    border-right: 10px solid #0f0;
-    box-shadow: 0 -6px #fff;
-  }
-  #health{
-    top: 242px;
-    left: 73px;
-    border-top: 12px solid #fff;
-    border-left: 12px solid #0f0;
-    border-right: 12px solid #0f0;
-  }
-  #health::before{
-    z-index: -1;
-    content: "";
-    left: -13px;
-    top: -23.5px;
-    width: 14px;
-    height: 14px;
-    border-radius: 6px;
-    box-shadow: 12px 0 #fff;
-  }
-  #health::after{
-    color: #0f0;
-    font-size: 13px;
-    content: "H";
-    position: absolute;
-    display: block;
-    left: -4px;
-    top: -22px;
+    z-index: 9;
   }
   div:last-child{ display: none; }
   .debug>#c{ left: 100px; margin-left: 0; }
@@ -210,18 +92,12 @@
     </ul>
   </div>
   <div id="sidebar" unselectable="on">
-    <div id="scoreText">/</div>
-    <div class="divider" style="top: 35px;"></div>
-    <div class="divider" style="top: 112px;"></div>
-    <div id="ammo"></div>
-    <div id="shield">S</div>
-    <div id="health"></div>
-    <div class="divider" style="top: 372px;"></div>
+    <img src="gui.png" width="100" />
     <canvas id="s" width="100" height="480">If you use IE or Edge...... GET OUT!</canvas>
   </div>
   <canvas id="c" oncontextmenu="return false">Sorry, but your browser does not support HTML5 Canvas. Please switch to the latest version of a modern browser, such as Google Chrome, Firefox, or Safari.</canvas>
   <script type="text/javascript">
-  var h = window.innerHeight, w = s.getContext('2d'), z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8ClampedArray([255,255,255]), meters = document.getElementsByClassName('value'), schedule = [], Game = {state:0,time:0,hiscore:1000}, powerups = ["weapon","health","wingman","time","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
+  var h = window.innerHeight, w = s.getContext('2d'), z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8ClampedArray([255,255,255]), schedule = [], Game = {state:0,time:0,hiscore:1000}, powerups = ["weapon","health","wingman","time","deflector","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
     Swarmer: {
       health: 25, drawFn: function(self){
         polygon(self.x,self.y,data.Swarmer.xs,data.Swarmer.ys,'#ffcf00'); // can it still be simplified to just polygon();?
@@ -255,8 +131,7 @@
         var bullet = new Projectile("Fighter",self.x,self.y,data.fighterBullet.drawFn,data.fighterBullet.moveFn,25);
         return 10;
       }, deathFn: function(index){
-        var en = entities.splice(index,1)[0];
-        spawnDrop(en);
+        spawnDrop(entities.splice(index,1)[0]);
         return 4;
       }, extend: function(self){
         self.px = h-player.x;
@@ -278,8 +153,7 @@
         bullet.sy = Math.sin(ang)*Math.PI/2;
         return 15;
       }, deathFn: function(index){
-        var en = entities.splice(index,1)[0];
-        spawnDrop(en);
+        spawnDrop(entities.splice(index,1)[0]);
         return 6;
       }, extend: function(self){
         self.midline = Math.random()*h/2+h/4;
@@ -333,29 +207,7 @@
           self.sang = Math.random()*0.2-0.1;
         }
       }
-    }, /*Cannon: {
-      health: 75, drawFn: function(self){
-
-      }, moveFn: function(self){
-        if(dist(self.x,self.y,self.dx,self.dy)>3){
-          self.x+=Math.cos(self.ang)*8;
-          self.y+=Math.sin(self.ang)*8;
-        }
-      }, fireFn: function(self){
-        var bullet = new Projectile("Cannon",self.x,self.y,data.cannonBullet.drawFn,data.cannonBullet.moveFn,40);
-        bullet.sx = Math.cos(self.shootAng)*15;
-        bullet.sy = Math.sin(self.shootAng)*15;
-        return 50;
-      }, deathFn: function(index){
-        entities.splice(index,1);
-        return 20;
-      }, extend: function(self){
-        self.dx = Math.random()*h/3*2+h/6;
-        self.dy = Math.random()*h/4+h/4;
-        self.ang = Math.atan2(self.dy-self.y,self.dx-self.x);
-        self.shootAng = Math.atan2(player.y-self.y,player.x-self.x);
-      }
-    },*/ Boss: {
+    }, Boss: {
       health: 800, drawFn: function(self){
 
       }, moveFn: function(self){
@@ -400,13 +252,6 @@
         this.y+=this.sy;
         if(this.x<0||this.x>h||this.y>h)this.hit=true;
       }
-    }, missile: {
-      drawFn: function(self){
-        polygon(self.x,self.y,data.missile.xs,data.missile.ys,'#cccc00');
-      }, moveFn: function(){
-        this.y+=25;
-        if(this.y>h+25)this.hit = true;
-      }, xs: [0,-5,-5,-7,-5,-5,-8,8,5,5,7,5,5], ys: [0,-10,-20,-24,-24,-36,-40,-40,-36,-24,-24,-20,-10]
     }, weapon: {
       drawFn: function(self){
         polygon(self.x,self.y,data.weapon.xs,data.weapon.ys,'#ff1f3f');
@@ -417,6 +262,7 @@
           player.laser = true;
           callback("stopLaser",function(){player.laser = false;},500);
         }
+        barValue[0]+=10;
       }, xs: [0,-8,-4,-4,4,4,8], ys: [-8,0,0,8,8,0,0]
     }, health: {
       drawFn: function(self){
@@ -463,8 +309,25 @@
         particle(self.x,self.y,'rgba(255,200,0,0.8)',10);
       }, pickFn: function(){
         player.freeze = true;
-        callback("stopFreeze",function(){player.freeze = false},360);
+        callback("stopFreeze",function(){player.freeze = false;},360);
       }
+    }, deflector: { // assume only 1 deflector at any time
+      drawFn: function(self){
+        z.strokeStyle = z.fillStyle = "#eee";
+        z.beginPath();
+        z.arc(self.x,self.y,8,0,Math.PI*2);
+        z.stroke();
+        z.beginPath();
+        z.arc(self.x,self.y,3,0,Math.PI*2);
+        z.fill();
+        particle(self.x,self.y,'rgba(255,255,255,0.8)',10);
+      }, pickFn: function(){
+        data.deflector.x = player.x;
+        data.deflector.y = player.y;
+        data.deflector.radius = 1;
+        player.deflect = true;
+        callback("stopDeflect",function(){player.deflect = false;},h);
+      }, x: h/2, y:h/2, radius: 0,
     }, life: {
       drawFn: function(){
 
@@ -472,10 +335,10 @@
         
       }
     }
-  };
+  }, keyCodes = [38,38,40,40,37,39,37,39,66,65,13], keyIndex = 0;
   window.RAF = (function() {
-    return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame ||
-    window.msRequestAnimationFrame || window.oRequestAnimationFrame || function(f) { window.setInterval(f,1e3/fps); };
+    return window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame||
+    window.msRequestAnimationFrame||window.oRequestAnimationFrame||function(f){window.setInterval(f,1e3/fps);};
   })();
   c.width = c.height = h;
   function Entity(name,_x,_y,health,drawFn,moveFn,fireFn,deathFn,extend){
@@ -532,6 +395,7 @@
     drops.push(this);
   }
   function $(t,r,i,a,n,g,l,e){var b=(-g*l+a*(-n+l)+i*(g-e)+n*e)/2,c=b<0?-1:1,d=(a*l-i*e+(e-a)*t+(i-l)*r)*c,f=(i*g-a*n+(a-g)*t+(n-i)*r)*c;return d>0&&f>0&&d+f<2*b*c}
+  function r(e,c,t,a,n,g,l,E){return e<n+l&&e+t>n&&c<g+E&&c+a>g}
   function dist(a,n,c,e){return Math.sqrt(Math.pow(e-n,2)+Math.pow(c-a,2))}
   function callback(type,fn,tk){
     var arr = schedule[tk+tick.s];
@@ -564,6 +428,7 @@
       ang += Math.PI/3*2;
     }
   }
+  function bulletCount(level){ return level*2/3+1|0; }
   var player = new Entity('Player',h/2,h-50,255,function(self){
     z.beginPath();
     z.moveTo(self.x-10,self.y+10);
@@ -584,11 +449,11 @@
       z.lineTo(self.x+29,self.y+10);
       z.lineTo(self.x+36,self.y-4);
     }
-    z.fillStyle = '#007fff';
+    z.fillStyle = player.color;
     z.fill();
     if(self.shield){
       z.beginPath();
-      z.arc(self.x,self.y-1,16,0,Math.PI*2);
+      z.arc(self.x,self.y+3,15,0,Math.PI*2);
       z.fillStyle = 'rgba(128,192,255,0.4)';
       z.fill();
       if(barValue[1]>2)barValue[1]-=3;
@@ -606,8 +471,9 @@
     if(self.regen)barValue[2]=++self.health;
     self.collisionBox = [self.x-10,self.y+10,self.x,self.y-10,self.x+10,self.y+10];
   },function(){
-    if(player.firing&&barValue[0]>2+player.weaponLevel*2)callback('PlayerFire',player.fire,15);
-    if(barValue[0]<17+player.weaponLevel*2)return;
+    var bullets = bulletCount(player.weaponLevel);
+    if(player.firing&&barValue[0]>2+bullets)callback('PlayerFire',player.fire,15);
+    if(barValue[0]<=17+bullets)return;
     if(player.weaponLevel%3!=2){
       var m = new Projectile('Player',player.x,player.y-2,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
       m.ang = Math.PI/2;
@@ -631,17 +497,22 @@
       var r = new Projectile('Player',player.x+6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
       r.ang = Math.PI/2-i/8;
     }
-    barValue[0]-=17+player.weaponLevel*2;
+    barValue[0]-=17+bullets;
   },function(){
     Game.state = 3;
-    entities = [];
+    entities = []; // can't chain commands; array returns shallow copy.
     playerProjectiles = [];
     enemyProjectiles = [];
+    drops = [];
     schedule = [];
     barValue[2]=0;
     player.weaponLevel=1;
+    player.color='#007fff';
     player.kills=player.wingman=0;
-    player.shield=player.regen=player.freeze=false;
+    player.shield=false;
+    player.regen=false;
+    player.freeze=false;
+    player.deflect=false;
     if(player.score>Game.hiscore)Game.hiscore = player.score;
     status();
     start.style.display = 'block';
@@ -654,6 +525,7 @@
       if(Math.random()<.5)this.kills++; // compensation
     },
     score:0,
+    color:'#007fff',
     firing:false,
     shield:false,
     weaponLevel:1,
@@ -661,12 +533,55 @@
     laser:false,
     freeze:false,
     kills:0,
-    wingman:0
-  });
+    wingman:0,
+    deflect:false,
+  }), Missile = { // Missile is not an entity!
+    draw: function(){
+      if(Missile.phase>75){
+        z.shadowColor = "#f00";
+        z.shadowBlur = 5;
+        z.fillStyle = "#fcc";
+        z.fillRect(Missile.x-0.5,Math.max(0,Missile.y-h),1,Math.min(h,Missile.y-45));
+        z.shadowColor = "transparent";
+        z.shadowBlur = 0;
+        polygon(Missile.x,Missile.y,Missile.xs,Missile.ys,'#0ff');
+      }else{
+        z.strokeStyle = z.fillStyle = '#a00';
+        z.shadowBlur = 8;
+        z.shadowColor = "#f00";
+        z.fillRect(Missile.x-2,6,4,18);
+        z.fillRect(Missile.x-2,28,4,4);
+        z.beginPath();
+        z.arc(Missile.x,18,16,0,Math.PI*2);
+        z.stroke();
+        z.beginPath();
+        z.strokeStyle = "#000";
+        z.lineWidth = 8;
+        z.setLineDash([76-Missile.phase,74-Missile.phase]);
+        z.moveTo(Missile.x,38);
+        z.lineTo(Missile.x,h);
+        z.stroke();
+        z.setLineDash([75-Missile.phase]);
+        z.shadowColor = "transparent";
+        z.lineWidth = 2;
+        z.strokeStyle = "#fee";
+        z.stroke();
+        z.setLineDash([]);
+      }
+    }, move: function(){
+      if(!Missile.phase)return;
+      if(Missile.phase>75)Missile.y+=24;
+    }, reset: function(){
+      Missile.phase = 0;
+      Missile.y = 0;
+    },phase: 0, x: 0, y: 0, xs: [0,-4,-4,-7,-4,-4,-8,8,4,4,7,4,4], ys: [0,-11,-22,-25,-25,-39,-43,-43,-39,-25,-25,-22,-11]
+  };
   entities.shift(); // Exclude player from entity list
   function onStart(){
     start.style.display = "none";
+    Missile.reset();
     z.clearRect(0,0,h,h);
+    z.globalCompositeOperation = 'lighter'; // this gets reset sometimes for some reason, quick fix.
     tick.s = Game.time = player.score = 0;
     Game.state = 1;
     player.health = barValue[0] = barValue[1] = barValue[2] = 255;
@@ -716,20 +631,36 @@
           draw();
         }
       break;
+      default:
+        if(e.keyCode==keyCodes[keyIndex]){
+          if(keyIndex++==10)OP();
+        }else keyIndex=0;
     }
   });
+  function OP(){
+    player.color = '#ffa500';
+    barValue[0] = barValue[1] = barValue[2] = 255;
+    player.weaponLevel = 10;
+    player.score = Infinity;
+    for(var i=0,type,values;i<5;i++){
+      type = powerups[i];
+      values = data[type];
+      var d = new Drop(type,Math.random()*h,Math.random()*h,values.drawFn,values.pickFn);
+      d.done = 1500;
+    }
+  }
   function add0(n){
     if(n<10)return '0'+n;
     return ''+n;
   }
-  function spawnEnemy(type){
-    if(!type)type = enemies[Math.random()*4|0];
+  function spawnEnemy(type,x){
+    //if(!type)type = enemies[Math.random()*4|0];
     var values = data[type];
-    new Entity(type,Math.random()*h,0,values.health,values.drawFn,values.moveFn,values.fireFn,values.deathFn,values.extend);
+    new Entity(type,x||Math.random()*h,0,values.health,values.drawFn,values.moveFn,values.fireFn,values.deathFn,values.extend);
   }
   function spawnDrop(e){
     if(player.kills++<=40||drops.length>2||player.score%40<=30)return;
-    var type = powerups[Math.random()*4|0];
+    var type = powerups[Math.random()*5|0];
     var values = data[type];
     new Drop(type,e.x,e.y,values.drawFn,values.pickFn);
     player.kills = 0;
@@ -742,12 +673,12 @@
     }
     if(!player.freeze&&l&&enemyProjectiles.length<=tick.s/15){
       let r = entities[Math.random()*l|0];
-      if(r.name!='Swarmer'&&r.name!='Asteroid'){
+      if(r.name!='Swarmer'&&r.name!='Asteroid'&&!(player.deflect&&Math.abs(dist(r.x,r.y,data.deflector.x,data.deflector.y)-data.deflector.radius)<8)){
         if(r.fired)r.fired--; // fire cooldown
         else r.fired = r.fire(r);
       }
     }
-    if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){ // this code need fix... Math.random in comparing stage? What?
+    if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){ // this code need fix...
       for(i=0,t=(Math.floor(Math.random()*tick.s/(l+1))%4);i<t;i++)spawnEnemy(enemies[Math.random()*4|0]);
     }
     z.clearRect(0,0,h,h);
@@ -764,7 +695,26 @@
       if(e.health<=0)player.score+=e.die(i--)|0;
       else if(e.y>h+25||e.y<-25||e.x<-25||e.x>h+25)entities.splice(i--,1); // by not executing e.die(), we avoid spawning extra asteroids.
     }
-    if(player.health<=0)player.die();
+    if(tick.s%4000==3999){
+      Missile.phase = 1;
+      Missile.x = player.x;
+    }
+    if(Missile.phase){
+      Missile.draw();
+      if(!player.freeze){
+        Missile.phase++;
+        if(Missile.phase<30)Missile.x = mouse.x; // better >:D
+        if(Missile.phase>75){
+          Missile.move();
+          if(Missile.y>h+50)callback("resetMissile",Missile.reset,30);
+        }
+      }
+      if(Missile.phase>75&&r(player.x-10,player.y-10,20,20,Missile.x-4,Missile.y-43,8,43)){
+        player.hurt(127);
+        callback("damage",function(){player.hurt(127);},1);
+        Missile.reset(); // Only damage once
+      }
+    }
     for(i=0;i<playerProjectiles.length;i++){
       let b = playerProjectiles[i];
       b.move(b);
@@ -785,6 +735,11 @@
       }
       if(b.hit)playerProjectiles.splice(i--,1);
     }
+    if(player.deflect)data.deflector.radius+=8;
+    z.beginPath();
+    z.arc(data.deflector.x,data.deflector.y,data.deflector.radius,0,Math.PI*2);
+    z.strokeStyle = "#eee";
+    z.stroke();
     for(i=0;i<enemyProjectiles.length;i++){
       let b = enemyProjectiles[i];
       b.move(b);
@@ -792,8 +747,8 @@
       if($(b.x,b.y,...player.collisionBox)){
         player.hurt(b.damage);
         b.hit = true;
-      }else if($()){
-        
+      }else if(player.deflect&&Math.abs(dist(b.x,b.y,data.deflector.x,data.deflector.y)-data.deflector.radius)<8){
+        b.hit = true;
       }
       if(b.hit)enemyProjectiles.splice(i--,1);
     }
@@ -813,8 +768,8 @@
     w.fillStyle = '#00ff00';
     w.fillText(add0(Game.time/60|0)+':'+add0(Game.time%60),50,40);
     w.textAlign = 'right';
-    w.fillText(player.score+'',100,75);
-    w.fillText(Game.hiscore+'',100,125);
+    w.fillText(player.score+'',102,75,100);
+    w.fillText(Game.hiscore+'',102,123,100);
     if(barValue[0]<255)barValue[0]++; // checking doesn't matter anymore, using Uint8ClampedArray.
     w.fillStyle = '#f00';
     w.fillRect(0,370-barValue[0],30,barValue[0]);
@@ -846,7 +801,6 @@
   tick.s = 0;
   z.globalCompositeOperation = 'lighter';
   z.lineWidth = 2;
-  z.textAlign = 'center';
   w.font = '24px Minecraftia';
   var stats = new Stats();
   document.body.appendChild(stats.dom);
