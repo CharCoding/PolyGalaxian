@@ -148,7 +148,7 @@
         self.collisionBox = [self.x-14,self.y-8,self.x,self.y+21,self.x+14,self.y-8];
       }, fireFn: function(self){
         var bullet = new Projectile("Spike",self.x+((Math.random()<.5)?-7:7),self.y+14,data.spikeBullet.drawFn,data.spikeBullet.moveFn,30);
-        var ang = Math.atan2(player.y-self.y,player.x-self.x);
+        var ang = Math.atan2(mouse.y-self.y,mouse.x-self.x);
         bullet.sx = Math.cos(ang)*Math.PI/2;
         bullet.sy = Math.sin(ang)*Math.PI/2;
         return 15;
@@ -508,11 +508,13 @@
     barValue[2]=0;
     player.weaponLevel=1;
     player.color='#007fff';
-    player.kills=player.wingman=0;
+    player.kills=0;
+    player.wingman=0;
     player.shield=false;
     player.regen=false;
     player.freeze=false;
     player.deflect=false;
+    keyIndex = 0;
     if(player.score>Game.hiscore)Game.hiscore = player.score;
     status();
     start.style.display = 'block';
@@ -633,13 +635,13 @@
       break;
       default:
         if(e.keyCode==keyCodes[keyIndex]){
-          if(keyIndex++==10)OP();
+          if(keyIndex++==10&&player.color=='#007fff')OP();
         }else keyIndex=0;
     }
   });
   function OP(){
     player.color = '#ffa500';
-    barValue[0] = barValue[1] = barValue[2] = 255;
+    player.health = barValue[0] = barValue[1] = barValue[2] = 255;
     player.weaponLevel = 10;
     player.score = Infinity;
     for(var i=0,type,values;i<5;i++){
@@ -695,7 +697,7 @@
       if(e.health<=0)player.score+=e.die(i--)|0;
       else if(e.y>h+25||e.y<-25||e.x<-25||e.x>h+25)entities.splice(i--,1); // by not executing e.die(), we avoid spawning extra asteroids.
     }
-    if(tick.s%4000==3999){
+    if(tick.s%3600==0){
       Missile.phase = 1;
       Missile.x = player.x;
     }
@@ -703,8 +705,9 @@
       Missile.draw();
       if(!player.freeze){
         Missile.phase++;
-        if(Missile.phase<30)Missile.x = mouse.x; // better >:D
-        if(Missile.phase>75){
+        if(Missile.phase<70){
+          Missile.x = mouse.x;
+        }else if(Missile.phase>75){
           Missile.move();
           if(Missile.y>h+50)callback("resetMissile",Missile.reset,30);
         }

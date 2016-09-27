@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Keyboard controls</title>
+  <style type="text/css">
+  body {
+    margin: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+  #cvs {
+    width: 100vh;
+    height: 100vh;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    position: absolute;
+    left: 50%;
+    top: 0;
+    margin-left: -50vh;
+  }
+  .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <canvas id="cvs" oncontextmenu="return false;"><p>Sorry, but your browser does not support &lt;canvas&gt; elements. Use the latest version of Google Chrome or Firefox to play this game.</p></canvas>
+  <script type="text/javascript">
+  Number.prototype.mod=function(d){return this-Math.floor(this/d)*d;};
+  var timer;
+  var ctx = cvs.getContext('2d'), h = window.innerHeight,
+  game = {paused:true,interval:0},
+  player = {x:h/2,y:h/2,ang:0},mouse = {x:h/2,y:h/2},tau=Math.PI*2, // TAU IS AWESOME
+  keys = [], keyCodes = [38,38,40,40,37,39,37,39,66,65,13], i = 0, mode = 1;
+  cvs.width = cvs.height = h;
+  ctx.globalCompositeOperation = 'lighter';
+  function draw(){
+    game.interval++;
+    ctx.clearRect(0,0,h,h);
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,10,0,tau);
+    ctx.closePath();
+    ctx.moveTo(player.x,player.y);
+    ctx.fillStyle="#3f7fff";
+    ctx.fill();
+    var temp = keyPressed&64;
+    keyPressed&=63;
+    if(mode){ // 6 key mode
+      switch(keyPressed){
+        case 34:
+        case 1:ang=0;break;
+        case 19:ang=15;break;
+        case 3:ang=30;break;
+        case 5:
+        case 7:ang=45;break;
+        case 2:ang=60;break;
+        case 11:ang=75;break;
+        case 15:
+        case 6:ang=90;break;
+        case 13:ang=105;break;
+        case 4:ang=120;break;
+        case 10:
+        case 14:ang=135;break;
+        case 12:ang=150;break;
+        case 44:ang=165;break;
+        case 20:
+        case 8:ang=180;break;
+        case 26:ang=195;break;
+        case 24:ang=210;break;
+        case 40:
+        case 56:ang=225;break;
+        case 16:ang=240;break;
+        case 25:ang=255;break;
+        case 57:
+        case 48:ang=270;break;
+        case 41:ang=285;break;
+        case 32:ang=300;break;
+        case 17:
+        case 49:ang=315;break;
+        case 33:ang=330;break;
+        case 37:ang=345;break;
+        default:ang=NaN; // don't move in this case.
+      }
+      ctx.fillStyle = isNaN(ang)?'#ff4f2f':'#2fff4f';
+      if(keyPressed&1)ctx.fillText('F',h-20,30);
+      if(keyPressed&2)ctx.fillText('E',h-40,20);
+      if(keyPressed&4)ctx.fillText('W',h-60,20);
+      if(keyPressed&16)ctx.fillText('S',h-60,40);
+      if(keyPressed&32)ctx.fillText('D',h-40,40);
+    }else{ // 4 key mode
+      switch(keyPressed){
+        case 32:ang=0;break;
+        case 36:ang=45;break;
+        case 44:
+        case 4:ang=90;break;
+        case 12:ang=135;break;
+        case 8:ang=180;break;
+        case 24:ang=225;break;
+        case 56:
+        case 16:ang=270;break;
+        case 48:ang=315;break;
+        default:ang=NaN;
+      }
+      ctx.fillStyle = isNaN(ang)?'#ff4f2f':'#2fff4f';
+      if(keyPressed&4)ctx.fillText('W',h-60,20);
+      if(keyPressed&16)ctx.fillText('S',h-60,40);
+      if(keyPressed&32)ctx.fillText('D',h-40,30);
+    }
+    keyPressed^=temp;
+    if(keyPressed&8)ctx.fillText('A',h-80,30); // A and Space stays the same place
+    if(keyPressed&64)ctx.fillText('SPACE',h-60,60);
+    ctx.fillStyle=mode?'#00f':'#000';
+    ctx.fillText(mode?'6-Key':'4-Key',h-60,80);
+    ctx.fillStyle="#000";
+    ctx.fillText('('+player.x.toFixed(7)+','+player.y.toFixed(7)+')',5,20);
+    ctx.fillText(('00'+ang).slice(-3)+' '+('000000'+keyPressed.toString(2)).slice(-7),5,40);
+    /* //works, but unnecessary.
+    player.ang = Math.atan2(mouse.y-player.y,mouse.x-player.x);
+    ctx.beginPath();
+    ctx.moveTo(player.x,player.y);
+    ctx.lineTo(mouse.x,mouse.y);
+    ctx.stroke();
+    ctx.fillText((player.ang*180/Math.PI).toFixed(0),mouse.x,mouse.y);
+    */
+    if(!isNaN(ang)){
+      ang=ang/180*Math.PI;
+      player.x=(Math.cos(ang)*10+player.x).mod(h);
+      player.y=(player.y-Math.sin(ang)*10).mod(h);
+    }
+  }
+  cvs.addEventListener('mousemove',function(evt){
+    mouse.x=evt.offsetX;
+    mouse.y=evt.offsetY;
+  },false);
+  cvs.addEventListener('mousedown',function(evt){
+  },false);
+  var keyPressed = 0, ang = 0; // 000000 -> 300/240/180/120/60/0
+  document.addEventListener('keydown',function(evt){
+    var n = evt.keyCode;
+    switch(n){
+      case 70: // F
+        keyPressed|=1;
+      break;
+      case 69: // E
+        keyPressed|=2;
+      break;
+      case 87: // W
+        keyPressed|=4;
+      break;
+      case 65: // A
+        keyPressed|=8;
+      break;
+      case 83: // S
+        keyPressed|=16;
+      break;
+      case 68: // D
+        keyPressed|=32;
+      break;
+      case 32: // SPACE
+        keyPressed|=64;
+      break;
+      case 16: // Shift
+        mode^=1;
+      break;
+      case 27: // Esc
+      case 80: // P
+        if(game.paused){
+          timer=setInterval(function(){draw();},30);
+          game.paused=false;
+        }else{
+          clearInterval(timer);
+          game.paused=true;
+          help();
+        }
+      break;
+      default:
+        if(n==keyCodes[i]){
+          if(i++==10)i=0; // Konami code
+      }else i=0;
+    }
+  },false);
+  document.addEventListener('keyup',function(evt){
+    var n = evt.keyCode;
+    switch(n){
+      case 70: // F
+        keyPressed&=254;
+      break;
+      case 69: // E
+        keyPressed&=253;
+      break;
+      case 87: // W
+        keyPressed&=251;
+      break;
+      case 65: // A
+        keyPressed&=247;
+      break;
+      case 83: // S
+        keyPressed&=239;
+      break;
+      case 68: // D
+        keyPressed&=223;
+      break;
+      case 32: // SPACE
+        keyPressed&=191;
+      break;
+    }
+  },false);
+  ctx.font = '20px monospace';
+  ctx.strokeStyle = '#0f0';
+  function help(){
+    ctx.textAlign = 'center';
+    ctx.fillText("Press Esc or P to pause/unpause.",h/2,h/2-30);
+    ctx.fillText("Use keys WEASDF (4-key: WASD) and Space",h/2,h/2-10);
+    ctx.fillText("to check movement and keyboard ghosting.",h/2,h/2+10);
+    ctx.fillText("Press Shift to switch key mode (6-key/4-key).",h/2,h/2+30);
+    ctx.textAlign = 'left';
+  }
+  help();
+  </script>
+</body>
+</html>
