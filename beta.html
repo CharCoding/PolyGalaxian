@@ -88,7 +88,7 @@
     Control movement with <select id="control">
       <option value="1">Hexakey - WEASDF</option>
       <option value="2" selected="selected">4 Key - WASD</option>
-      <option value="0">Mouse</option>
+      <option value="0" disabled="disabled">Mouse</option>
     </select><br />
     aim with mouse, left click/hold to fire, right click to activate shield.<br />
     Press "P" or "Esc" to pause/resume.<br />
@@ -99,8 +99,7 @@
       <li>Thanks to <a href="https://github.com/mrdoob/stats.js">Mr.doob</a> for the FPS counter.</li>
       <li>Thanks to all my friends for testing the game and giving me feedback.</li>
     </ul>
-    To check out features currently under consideration,<br />
-    visit the <a href="./beta.html">Beta version</a>.
+    This is the Beta version. <a href="./index.html">Main version</a>
   </div>
   <div id="sidebar" unselectable="on">
     <img src="gui.png" width="100" />
@@ -108,7 +107,7 @@
   </div>
   <canvas id="c" oncontextmenu="return false">Sorry, but your browser does not support HTML5 Canvas. Please switch to the latest version of a modern browser, such as Google Chrome, Firefox, or Safari.</canvas>
   <script type="text/javascript">
-  var h = window.innerHeight, w = s.getContext('2d'), z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], mouse = { x:h/2, y:h-50 }, barValue = new Uint8ClampedArray([255,255,255]), schedule = [], Game = {state:0,time:0,hiscore:1000}, powerups = ["weapon","health","wingman","time","deflector","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
+  var h = window.innerHeight, w = s.getContext('2d'), z = c.getContext('2d'), entities = [], playerProjectiles = [], enemyProjectiles = [], drops = [], barValue = new Uint8ClampedArray([255,255,255]), schedule = [], Game = {state:0,time:0,hiscore:1000}, powerups = ["weapon","health","wingman","time","deflector","nuke","life"], enemies = ["Swarmer","Fighter","Spike","Asteroid"], data = {
     Swarmer: {
       health: 25, drawFn: function(self){
         polygon(self.x,self.y,data.Swarmer.xs,data.Swarmer.ys,'#ffcf00'); // can it still be simplified to just polygon();?
@@ -159,7 +158,7 @@
         self.collisionBox = [self.x-14,self.y-8,self.x,self.y+21,self.x+14,self.y-8];
       }, fireFn: function(self){
         var bullet = new Projectile("Spike",self.x+((Math.random()<.5)?-7:7),self.y+14,data.spikeBullet.drawFn,data.spikeBullet.moveFn,30);
-        var ang = Math.atan2(mouse.y-self.y,mouse.x-self.x);
+        var ang = Math.atan2(player.y-self.y,player.x-self.x);
         bullet.sx = Math.cos(ang)*Math.PI/2;
         bullet.sy = Math.sin(ang)*Math.PI/2;
         return 15;
@@ -240,12 +239,12 @@
         z.fillStyle = '#fff';
         z.fillRect(this.x-1.5,this.y-1.5,3,3);
         z.fillStyle = 'rgba(255,255,255,0.6)';
-        z.fillRect(this.x-1-this.sx,this.y+this.sy-2.5,2,2);
+        z.fillRect(this.x-1-this.sx,this.y-1-this.sy,2,2);
       }, moveFn: function(){
-        this.sx+=Math.cos(this.ang)*0.75;
-        this.sy+=Math.sin(this.ang)*0.75;
+        this.sx+=Math.cos(this.ang);
+        this.sy+=Math.sin(this.ang);
         this.x+=this.sx;
-        this.y-=2.75+this.sy;
+        this.y+=this.sy;
         if(this.x<0||this.x>h||this.y<0)this.hit = true;
       }
     }, fighterBullet: {
@@ -603,26 +602,26 @@
     if(barValue[0]<=17+bullets)return;
     if(player.weaponLevel%3!=2){
       var m = new Projectile('Player',player.x,player.y-2,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      m.ang = Math.PI/2;
+      m.ang = player.ang;
     }
     if(player.weaponLevel%3!=1){
       var m1 = new Projectile('Player',player.x-6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25),
       m2 = new Projectile('Player',player.x+6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      m1.ang = m2.ang = Math.PI/2;
+      m1.ang = m2.ang = player.ang;
     }
     if(player.wingman&1){
       var m3 = new Projectile('Player',player.x-36,player.y+5,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      m3.ang = Math.PI/2;
+      m3.ang = player.ang;
     }
     if(player.wingman&2){
       var m4 = new Projectile('Player',player.x+36,player.y+5,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      m4.ang = Math.PI/2;
+      m4.ang = player.ang;
     }
     for(var i=1,e=player.weaponLevel/3;i<e;i++){
       var l = new Projectile('Player',player.x-6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      l.ang = i/8+Math.PI/2;
+      l.ang = i/8+player.ang;
       var r = new Projectile('Player',player.x+6,player.y+3,data.playerBullet.drawFn,data.playerBullet.moveFn,25);
-      r.ang = Math.PI/2-i/8;
+      r.ang = player.ang-i/8;
     }
     barValue[0]-=17+bullets;
   },function(){
@@ -665,7 +664,8 @@
     wingman:0,
     deflect:false,
     leftCollisionBox:[],
-    rightCollisionBox:[]
+    rightCollisionBox:[],
+    ang:0
   }), Missile = { // Missile is not an entity!
     draw: function(){
       if(Missile.phase>75){
@@ -728,8 +728,7 @@
     }
   });
   c.addEventListener('mousemove',function(e){
-    mouse.x = e.offsetX;
-    mouse.y = e.offsetY;
+    player.ang = Math.atan2(e.offsetY-player.y,e.offsetX-player.x);
   });
   sub.addEventListener('click',onStart,false);
   document.addEventListener('mouseup',function(e){
@@ -771,11 +770,11 @@
           draw();
         }
       break;
+      default:
+        if(e.keyCode==keyCodes[keyIndex]){
+          if(keyIndex++==10&&player.color=='#007fff')OP();
+        }else keyIndex=0;
     }
-    if(e.keyCode==keyCodes[keyIndex]){
-      console.log(keyIndex);
-      if(keyIndex++==10&&player.color=='#007fff')OP();
-    }else keyIndex=0;
   });
   document.addEventListener('keyup',function(e){
     switch(e.keyCode){
@@ -835,10 +834,12 @@
     }
     if(!player.freeze&&l&&enemyProjectiles.length<=tick.s/15){
       let r = entities[Math.random()*l|0];
-      if(r.name!='Swarmer'&&r.name!='Asteroid'&&!(player.deflect&&Math.abs(dist(r.x,r.y,data.deflector.x,data.deflector.y)-data.deflector.radius)<8)){
-        if(r.fired)r.fired--; // fire cooldown
-        else r.fired = r.fire(r);
-      }
+      try{
+        if(r.name!='Swarmer'&&r.name!='Asteroid'&&!(player.deflect&&Math.abs(dist(r.x,r.y,data.deflector.x,data.deflector.y)-data.deflector.radius)<8)){
+          if(r.fired)r.fired--; // fire cooldown
+          else r.fired = r.fire(r);
+        }
+      }catch(e){console.log(e);}
     }
     if(tick.s/25>l*l+2*l+1&&tick.s%10===0&&l<18){ // this code need fix...
       for(i=0,t=(Math.floor(Math.random()*tick.s/(l+1))%4);i<t;i++)spawnEnemy(enemies[Math.random()*4|0]);
@@ -866,7 +867,7 @@
       if(!player.freeze){
         Missile.phase++;
         if(Missile.phase<70){
-          Missile.x = mouse.x;
+          Missile.x = player.x;
         }else if(Missile.phase>75){
           Missile.move();
           if(Missile.y>h+50)callback("resetMissile",Missile.reset,30);
@@ -949,7 +950,7 @@
       w.fillText(enemyProjectiles.length,0,420);
       w.textAlign = 'center';
       w.fillText((player.x|0)+','+(player.y|0),50,440);
-      w.fillText((mouse.x|0)+','+(mouse.y|0),50,460);
+      //w.fillText((mouse.x|0)+','+(mouse.y|0),50,460);
       w.textAlign = 'right';
       w.fillText(drops.length,100,400);
       w.fillText(playerProjectiles.length,100,420);
